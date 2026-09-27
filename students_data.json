@@ -1,0 +1,223 @@
+[
+  {
+    "id": "STU001",
+    "name": "Alex Johnson",
+    "email": "alex.j@stjosephs.edu",
+    "department": "Computer Science",
+    "grade_level": "Sophomore",
+    "attendance": 89.0,
+    "scores": {
+      "Mathematics": 99.0,
+      "Physics": 87.0,
+      "Computer Science": 99.0,
+      "English": 87.0,
+      "History": 89.0
+    },
+    "gpa": 3.81,
+    "status": "Good Standing"
+  },
+  {
+    "id": "STU002",
+    "name": "Sophia Martinez",
+    "email": "sophia.m@stjosephs.edu",
+    "department": "Data Science",
+    "grade_level": "Junior",
+    "attendance": 96.0,
+    "scores": {
+      "Mathematics": 94,
+      "Physics": 90,
+      "Computer Science": 98,
+      "English": 88,
+      "History": 91
+    },
+    "gpa": 3.92,
+    "status": "Honor Roll"
+  },
+  {
+    "id": "STU003",
+    "name": "Ethan Brown",
+    "email": "ethan.b@stjosephs.edu",
+    "department": "Electrical Engineering",
+    "grade_level": "Freshman",
+    "attendance": 97.0,
+    "scores": {
+      "Mathematics": 99.0,
+      "Physics": 98.0,
+      "Computer Science": 90.0,
+      "English": 96.0,
+      "History": 96.0
+    },
+    "gpa": 4.0,
+    "status": "Honor Roll"
+  },
+  {
+    "id": "STU004",
+    "name": "Emma Wilson",
+    "email": "emma.w@stjosephs.edu",
+    "department": "Computer Science",
+    "grade_level": "Senior",
+    "attendance": 88.0,
+    "scores": {
+      "Mathematics": 34.0,
+      "Physics": 11.0,
+      "Computer Science": 22.0,
+      "English": 20.0,
+      "History": 23.0
+    },
+    "gpa": 0.37,
+    "status": "At-Risk"
+  },
+  {
+    "id": "STU005",
+    "name": "Liam Davis",
+    "email": "liam.d@stjosephs.edu",
+    "department": "Information Technology",
+    "grade_level": "Sophomore",
+    "attendance": 99.0,
+    "scores": {
+      "Mathematics": 99.0,
+      "Physics": 98.0,
+      "Computer Science": 96.0,
+      "English": 99.0,
+      "History": 92.0
+    },
+    "gpa": 4.0,
+    "status": "Honor Roll"
+  },
+  {
+    "id": "STU006",
+    "name": "Olivia Taylor",
+    "email": "olivia.t@stjosephs.edu",
+    "department": "Data Science",
+    "grade_level": "Senior",
+    "attendance": 94.0,
+    "scores": {
+      "Mathematics": 92,
+      "Physics": 88,
+      "Computer Science": 96,
+      "English": 90,
+      "History": 87
+    },
+    "gpa": 3.81,
+    "status": "Honor Roll"
+  },
+  {
+    "id": "STU007",
+    "name": "Noah Anderson",
+    "email": "noah.a@stjosephs.edu",
+    "department": "Electrical Engineering",
+    "grade_level": "Junior",
+    "attendance": 85.5,
+    "scores": {
+      "Mathematics": 81,
+      "Physics": 85,
+      "Computer Science": 78,
+      "English": 82,
+      "History": 79
+    },
+    "gpa": 3.25,
+    "status": "Good Standing"
+  },
+  {
+    "id": "STU008",
+    "name": "Ava Thomas",
+    "email": "ava.t@stjosephs.edu",
+    "department": "Information Technology",
+    "grade_level": "Freshman",
+    "attendance": 91.0,
+    "scores": {
+      "Mathematics": 45.0,
+      "Physics": 44.0,
+      "Computer Science": 44.0,
+      "English": 33.0,
+      "History": 45.0
+    },
+    "gpa": 0.7,
+    "status": "At-Risk"
+  },
+  {
+    "id": "STU009",
+    "name": "Lucas White",
+    "email": "lucas.w@stjosephs.edu",
+    "department": "Computer Science",
+    "grade_level": "Junior",
+    "attendance": 87.0,
+    "scores": {
+      "Mathematics": 99.0,
+      "Physics": 99.0,
+      "Computer Science": 98.0,
+      "English": 99.0,
+      "History": 98.0
+    },
+    "gpa": 4.0,
+    "status": "Good Standing"
+  },
+  {
+    "id": "STU010",
+    "name": "Isabella Harris",
+    "email": "isabella.h@stjosephs.edu",
+    "department": "Data Science",
+    "grade_level": "Sophomore",
+    "attendance": 98.5,
+    "scores": {
+      "Mathematics": 96,
+      "Physics": 92,
+      "Computer Science": 99,
+      "English": 95,
+      "History": 93
+    },
+    "gpa": 3.98,
+    "status": "Honor Roll"
+  },
+  {
+    "id": "STU011",
+    "name": "guna",
+    "email": "guna66@gmail.com",
+    "department": "Computer Science",
+    "grade_level": "Freshman",
+    "attendance": 99.0,
+    "scores": {
+      "Mathematics": 80.0,
+      "Physics": 75.0,
+      "Computer Science": 85.0,
+      "English": 80.0,
+      "History": 82.0
+    },
+    "gpa": 3.02,
+    "status": "Good Standing"
+  },
+  {
+    "id": "STU012",
+    "name": "jas",
+    "email": "jas22@2009",
+    "department": "Computer Science",
+    "grade_level": "Freshman",
+    "attendance": 87.0,
+    "scores": {
+      "Mathematics": 80.0,
+      "Physics": 75.0,
+      "Computer Science": 85.0,
+      "English": 80.0,
+      "History": 82.0
+    },
+    "gpa": 3.02,
+    "status": "Good Standing"
+  },
+  {
+    "id": "STU013",
+    "name": "JASWANTH T",
+    "email": "jaswanth90@gmail.com",
+    "department": "Computer Science",
+    "grade_level": "Junior",
+    "attendance": 99.0,
+    "scores": {
+      "Mathematics": 99.0,
+      "Physics": 99.0,
+      "Computer Science": 99.0,
+      "English": 99.0,
+      "History": 99.0
+    },
+    "gpa": 4.0,
+    "status": "Honor Roll"
+  }
+]

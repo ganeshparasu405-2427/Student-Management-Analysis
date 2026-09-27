@@ -1,0 +1,11 @@
+id,name,email,department,grade_level,attendance,gpa,status
+STU001,Alex Johnson,alex.j@university.edu,Computer Science,Sophomore,92.5,3.65,Good Standing
+STU002,Sophia Martinez,sophia.m@university.edu,Data Science,Junior,96.0,3.92,Honor Roll
+STU003,Ethan Brown,ethan.b@university.edu,Electrical Engineering,Freshman,68.0,2.15,At-Risk
+STU004,Emma Wilson,emma.w@university.edu,Computer Science,Senior,88.0,3.44,Good Standing
+STU005,Liam Davis,liam.d@university.edu,Information Technology,Sophomore,71.5,2.38,At-Risk
+STU006,Olivia Taylor,olivia.t@university.edu,Data Science,Senior,94.0,3.81,Honor Roll
+STU007,Noah Anderson,noah.a@university.edu,Electrical Engineering,Junior,85.5,3.25,Good Standing
+STU008,Ava Thomas,ava.t@university.edu,Information Technology,Freshman,91.0,3.58,Good Standing
+STU009,Lucas White,lucas.w@university.edu,Computer Science,Junior,62.0,1.95,At-Risk
+STU010,Isabella Harris,isabella.h@university.edu,Data Science,Sophomore,98.5,3.98,Honor Roll

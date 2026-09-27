@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Joseph's University - Academic Information Portal</title>
+  
+  <!-- Fonts & Core Libraries -->
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- =========================================================================
+       VIEW 1: INSTITUTIONAL LOGIN PORTAL
+       ========================================================================= -->
+  <div id="view-login" class="app-view active">
+    <div class="login-container">
+      <div class="login-card">
+        
+        <!-- Login Card Brand Header -->
+        <div class="login-header">
+          <div class="login-brand-icon">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <h2>St. Joseph's University</h2>
+          <p>Academic Management & Student Information Portal</p>
+        </div>
+
+        <!-- Role Selector Toggle -->
+        <div class="role-toggle-bar">
+          <button type="button" id="btn-role-admin" class="role-btn active" onclick="switchLoginRole('admin')">
+            <i class="fa-solid fa-user-shield"></i> Administrator Login
+          </button>
+          <button type="button" id="btn-role-student" class="role-btn" onclick="switchLoginRole('student')">
+            <i class="fa-solid fa-user-graduate"></i> Student Portal Login
+          </button>
+        </div>
+
+        <!-- Form 1: Admin Login Form -->
+        <form id="form-login-admin" class="login-form active" onsubmit="handleLoginSubmit(event, 'admin')">
+          <div class="form-group">
+            <label for="admin-username">Admin Username / Email</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="admin-username" class="form-control" required placeholder="Enter Admin Username (e.g. GANESHMOORTHY)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="admin-password">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="admin-password" class="form-control" required placeholder="••••••••">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Login as Administrator
+          </button>
+        </form>
+
+        <!-- Form 2: Student Login Form -->
+        <form id="form-login-student" class="login-form" onsubmit="handleLoginSubmit(event, 'student')">
+          <div class="form-group">
+            <label for="student-login-id">Student ID</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-id-card"></i>
+              <input type="text" id="student-login-id" class="form-control" required placeholder="Enter Student ID (e.g. STU001)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="student-password">Password / Access Code</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-key"></i>
+              <input type="password" id="student-password" class="form-control" required placeholder="••••••••">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Access Student Portal
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <p>&copy; 2026 St. Joseph's University Information Systems</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================================
+       VIEW 2: ADMIN DASHBOARD PORTAL (FULL ACCESS)
+       ========================================================================= -->
+  <div id="view-admin" class="app-view">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-building-columns"></i>
+        </div>
+        <div class="brand-text">
+          <h1>
+            St. Joseph's University 
+            <span class="brand-badge">Admin Portal</span>
+          </h1>
+          <p>Office of the Registrar & System Administration</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Logged in Admin Profile -->
+        <div class="user-profile">
+          <div class="avatar">GM</div>
+          <div class="user-info">
+            <span class="user-name" id="admin-display-name">GANESHMOORTHY</span>
+            <span class="user-role">System Administrator</span>
+          </div>
+        </div>
+
+        <!-- Header Controls -->
+        <div class="header-actions">
+          <button id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <button class="btn btn-secondary" onclick="exportDataCSV()">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+          </button>
+          <button class="btn btn-primary" onclick="openAddStudentModal()">
+            <i class="fa-solid fa-user-plus"></i> Add Student Record
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="handleLogout()" title="Logout of System">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="app-container">
+      
+      <!-- Page Title & Breadcrumb Banner -->
+      <div class="page-title-banner">
+        <div>
+          <div class="breadcrumb">
+            <a href="#"><i class="fa-solid fa-house"></i> Home</a>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <a href="#">Academic Affairs</a>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span>Administrator Control Center</span>
+          </div>
+          <div class="banner-heading">
+            <h2>Student Management & Analytics System</h2>
+            <p>Real-time academic performance monitoring, risk diagnostics, and institutional reporting</p>
+          </div>
+        </div>
+
+        <div class="banner-meta">
+          <div class="meta-badge status-active">
+            <i class="fa-solid fa-circle-check"></i> Academic Term: Fall 2026
+          </div>
+          <div class="meta-badge">
+            <i class="fa-solid fa-shield-halved"></i> Admin Access Level
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Performance Indicators (KPIs) -->
+      <section class="kpi-grid">
+        <div class="kpi-card kpi-students">
+          <div class="kpi-details">
+            <span class="kpi-title">Total Enrolled Students</span>
+            <div class="kpi-value" id="kpi-total-students">0</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-users"></i> Active Academic Directory</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-user-graduate"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-gpa">
+          <div class="kpi-details">
+            <span class="kpi-title">Institutional Average CGPA</span>
+            <div class="kpi-value" id="kpi-avg-gpa">0.00</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-chart-line"></i> Benchmark Target: 3.00</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-award"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-att">
+          <div class="kpi-details">
+            <span class="kpi-title">Overall Attendance Rate</span>
+            <div class="kpi-value" id="kpi-avg-att">0%</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-clock"></i> Benchmark Target: 85%</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-risk">
+          <div class="kpi-details">
+            <span class="kpi-title">At-Risk Alerts</span>
+            <div class="kpi-value" id="kpi-risk-count">0</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-triangle-exclamation"></i> Immediate Intervention</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Navigation Bar -->
+      <nav class="tab-navigation">
+        <button class="tab-btn active" onclick="switchTab('analytics')">
+          <i class="fa-solid fa-chart-pie"></i> Executive Analytics & Metrics
+        </button>
+        <button class="tab-btn" onclick="switchTab('directory')">
+          <i class="fa-solid fa-address-book"></i> Student Directory & Records
+        </button>
+        <button class="tab-btn" onclick="switchTab('risk')">
+          <i class="fa-solid fa-triangle-exclamation"></i> Academic Intervention Desk
+        </button>
+      </nav>
+
+      <!-- TAB 1: Executive Analytics Dashboard -->
+      <div id="tab-analytics" class="tab-content active">
+        <div class="charts-grid">
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-book-bookmark"></i> Subject Average Scores</h3>
+              <span class="text-muted">Scale 0 - 100%</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartSubjectAvg"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-chart-pie"></i> CGPA Grade Distribution</h3>
+              <span class="text-muted">Student Proportion</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartGradeDist"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-diagram-project"></i> Attendance vs. CGPA Correlation</h3>
+              <span class="text-muted">Academic Placement</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartScatter"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="fa-solid fa-sitemap"></i> Department Performance Breakdown</h3>
+              <span class="text-muted">Average CGPA</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartDeptGpa"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 2: Student Directory & Data Table -->
+      <div id="tab-directory" class="tab-content">
+        <!-- Toolbar & Filters -->
+        <div class="controls-bar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search by student name, ID, or email..." oninput="handleSearchFilter()">
+          </div>
+
+          <div class="filter-group">
+            <select id="filter-dept" class="select-input" onchange="handleSearchFilter()">
+              <option value="">All Departments</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+            </select>
+
+            <select id="filter-level" class="select-input" onchange="handleSearchFilter()">
+              <option value="">All Grade Levels</option>
+              <option value="Freshman">Freshman</option>
+              <option value="Sophomore">Sophomore</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior">Senior</option>
+            </select>
+
+            <select id="filter-status" class="select-input" onchange="handleSearchFilter()">
+              <option value="">All Academic Statuses</option>
+              <option value="Honor Roll">Honor Roll</option>
+              <option value="Good Standing">Good Standing</option>
+              <option value="At-Risk">At-Risk</option>
+            </select>
+
+            <button class="btn btn-secondary btn-sm" onclick="resetFilters()" title="Reset Filters">
+              <i class="fa-solid fa-arrows-rotate"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Full Name & Email</th>
+                  <th>Department</th>
+                  <th>Grade Level</th>
+                  <th>Attendance</th>
+                  <th>CGPA</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="student-table-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span id="table-record-count">Showing 0 student records</span>
+            <span>Official Institutional Record System</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Academic Intervention Desk -->
+      <div id="tab-risk" class="tab-content">
+        <div class="risk-alert-banner">
+          <div class="risk-alert-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="risk-alert-content">
+            <h4>Academic Warning & Early Intervention Monitoring</h4>
+            <p>The following students are flagged due to low CGPA (&lt; 2.50) or critical attendance (&lt; 75.0%). Immediate advisor action and academic counseling are recommended.</p>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div id="at-risk-container" class="table-responsive">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Admin Footer -->
+    <footer class="app-footer">
+      <div class="footer-bottom">
+        <p>&copy; 2026 St. Joseph's University System Administrator Desk (GANESHMOORTHY). All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+
+  <!-- =========================================================================
+       VIEW 3: STUDENT SELF-SERVICE PORTAL (RESTRICTED PERSONAL VIEW)
+       ========================================================================= -->
+  <div id="view-student" class="app-view">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <div class="brand-text">
+          <h1>St. Joseph's University <span class="brand-badge">Student Portal</span></h1>
+          <p>Personal Academic Transcript & Achievement Center</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Logged in Student Info -->
+        <div class="user-profile">
+          <div class="avatar" id="student-avatar-box">ST</div>
+          <div class="user-info">
+            <span class="user-name" id="student-portal-name">Student Name</span>
+            <span class="user-role" id="student-portal-id">ID: STU000</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn btn-danger btn-sm" onclick="handleLogout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-container">
+      
+      <!-- Student Banner -->
+      <div class="student-profile-banner">
+        <div class="student-profile-main">
+          <div class="student-large-avatar" id="student-large-avatar">AJ</div>
+          <div>
+            <h2 id="student-card-name">Alex Johnson</h2>
+            <div class="student-badges-line">
+              <span class="meta-badge" id="student-card-dept"><i class="fa-solid fa-building-columns"></i> Computer Science</span>
+              <span class="meta-badge" id="student-card-level"><i class="fa-solid fa-layer-group"></i> Sophomore</span>
+              <span class="meta-badge" id="student-card-email"><i class="fa-solid fa-envelope"></i> alex.j@stjosephs.edu</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="student-standing-box">
+          <span class="standing-label">Academic Status</span>
+          <div id="student-card-status-badge" class="status-pill status-good">Good Standing</div>
+        </div>
+      </div>
+
+      <!-- Student KPI Metric Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-gpa">
+          <div class="kpi-details">
+            <span class="kpi-title">Overall Cumulative CGPA</span>
+            <div class="kpi-value" id="student-kpi-gpa">0.00</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-chart-line"></i> 4.0 Scale Cumulative Average</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-award"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-att">
+          <div class="kpi-details">
+            <span class="kpi-title">Classes Attendance Rate</span>
+            <div class="kpi-value" id="student-kpi-attendance">0%</div>
+            <span class="kpi-subtext"><i class="fa-solid fa-calendar-check"></i> Overall Lecture Attendance</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-risk" id="student-arrear-kpi-card">
+          <div class="kpi-details">
+            <span class="kpi-title">Active Arrears / Backlogs</span>
+            <div class="kpi-value" id="student-kpi-arrears">0</div>
+            <span class="kpi-subtext" id="student-arrear-subtext"><i class="fa-solid fa-circle-check"></i> Clear Standing</span>
+          </div>
+          <div class="kpi-icon-wrapper">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Content Grid: Subject Marks & Achievements -->
+      <div class="student-content-grid">
+        
+        <!-- Left: Subject Marksheet & Arrear Status Table -->
+        <div class="chart-card" style="grid-column: span 2;">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-file-signature"></i> Subject Marksheet & Arrear Status</h3>
+            <span class="text-muted">Enrolled Courses & Standing</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Enrolled Subject</th>
+                  <th>Score (%)</th>
+                  <th>Grade Letter</th>
+                  <th>Arrear / Pass Status</th>
+                </tr>
+              </thead>
+              <tbody id="student-marksheet-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Academic Achievements Wall -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-trophy" style="color: var(--warning);"></i> Academic Achievements</h3>
+            <span class="text-muted">Certificates & Badges</span>
+          </div>
+          <div id="student-achievements-list" class="achievements-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Student Footer -->
+    <footer class="app-footer">
+      <div class="footer-bottom">
+        <p>&copy; 2026 St. Joseph's University Student Self-Service Portal. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+
+  <!-- Modal for Add/Edit Student (Admin Only) -->
+  <div id="student-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">Add New Student Record</h3>
+        <button class="close-btn" onclick="closeStudentModal()">&times;</button>
+      </div>
+
+      <form id="student-form" onsubmit="handleSaveStudent(event)">
+        <input type="hidden" id="form-edit-id">
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="form-name">Full Name *</label>
+            <input type="text" id="form-name" class="form-control" required placeholder="e.g. Eleanor Vance">
+          </div>
+
+          <div class="form-group">
+            <label for="form-email">Institutional Email *</label>
+            <input type="email" id="form-email" class="form-control" required placeholder="e.g. e.vance@stjosephs.edu">
+          </div>
+
+          <div class="form-group">
+            <label for="form-department">Academic Department *</label>
+            <select id="form-department" class="form-control" required>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-grade-level">Grade Level *</label>
+            <select id="form-grade-level" class="form-control" required>
+              <option value="Freshman">Freshman</option>
+              <option value="Sophomore">Sophomore</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="form-attendance">Attendance Rate (%) *</label>
+            <input type="number" id="form-attendance" class="form-control" min="0" max="100" step="0.1" required placeholder="85.0">
+          </div>
+
+          <!-- Subject Marks -->
+          <div class="form-group full-width" style="margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+            <label style="font-weight: 700; color: var(--primary-text);"><i class="fa-solid fa-graduation-cap"></i> Subject Performance Scores (0 - 100%)</label>
+          </div>
+
+          <div class="form-group">
+            <label for="score-math">Mathematics</label>
+            <input type="number" id="score-math" class="form-control" min="0" max="100" value="80">
+          </div>
+
+          <div class="form-group">
+            <label for="score-physics">Physics</label>
+            <input type="number" id="score-physics" class="form-control" min="0" max="100" value="75">
+          </div>
+
+          <div class="form-group">
+            <label for="score-cs">Computer Science</label>
+            <input type="number" id="score-cs" class="form-control" min="0" max="100" value="85">
+          </div>
+
+          <div class="form-group">
+            <label for="score-english">English</label>
+            <input type="number" id="score-english" class="form-control" min="0" max="100" value="80">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="score-history">History</label>
+            <input type="number" id="score-history" class="form-control" min="0" max="100" value="82">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Student Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       CERTIFICATE VIEWER MODAL
+       ========================================================================= -->
+  <div id="certificate-modal" class="cert-modal-overlay" onclick="closeCertificateModal(event)">
+    <div class="cert-modal-wrapper">
+
+      <!-- Modal Action Bar -->
+      <div class="cert-modal-actions">
+        <div class="cert-modal-title-bar">
+          <i class="fa-solid fa-certificate" style="color: #d4af37;"></i>
+          <span id="cert-modal-label">Official Certificate</span>
+        </div>
+        <div class="cert-modal-btns">
+          <button class="btn btn-secondary btn-sm" onclick="downloadActiveCertificate()">
+            <i class="fa-solid fa-download"></i> Download PDF
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="closeCertificateModal()">
+            <i class="fa-solid fa-xmark"></i> Close
+          </button>
+        </div>
+      </div>
+
+      <!-- The Printable Certificate -->
+      <div class="cert-scroll-area">
+        <div id="certificate-canvas" class="certificate-paper">
+
+          <!-- Gold Corner Accents -->
+          <div class="cert-corner cert-corner-tl"></div>
+          <div class="cert-corner cert-corner-tr"></div>
+          <div class="cert-corner cert-corner-bl"></div>
+          <div class="cert-corner cert-corner-br"></div>
+
+          <!-- Header -->
+          <div class="cert-header">
+            <div class="cert-logo-block">
+              <div class="cert-logo-icon"><i class="fa-solid fa-building-columns"></i></div>
+              <div class="cert-logo-text">
+                <div class="cert-university-tagline">You Choose, We Do It</div>
+                <div class="cert-university-name">St. Joseph's University</div>
+                <div class="cert-university-sub">(An Autonomous Institution)</div>
+                <div class="cert-university-group">St. Joseph's Group of Institutions</div>
+                <div class="cert-university-loc">OMR, Chennai &ndash; 119</div>
+              </div>
+              <div class="cert-logo-badge">
+                <div class="cert-badge-circle">
+                  <span class="cert-badge-year">32</span>
+                  <span class="cert-badge-sub">Years of Excellence</span>
+                </div>
+              </div>
+            </div>
+            <div class="cert-header-divider"></div>
+          </div>
+
+          <!-- Certificate Body -->
+          <div class="cert-body">
+            <div class="cert-type-label" id="cert-type-label">Certificate of Achievement</div>
+            <div class="cert-presented-to">This is to certify that</div>
+            <div class="cert-student-name" id="cert-student-name">Student Name</div>
+            <div class="cert-student-id-line" id="cert-student-id-line">Student ID &bull; Department</div>
+            <div class="cert-description" id="cert-description">has fulfilled all academic requirements.</div>
+            <div class="cert-academic-term" id="cert-academic-term">Academic Year &bull; Semester</div>
+          </div>
+
+          <!-- Decorative Medal Strip -->
+          <div class="cert-medal-strip">
+            <div class="cert-medal-icon" id="cert-medal-icon">
+              <i class="fa-solid fa-award"></i>
+            </div>
+          </div>
+
+          <!-- Signature Block -->
+          <div class="cert-signatures">
+            <div class="cert-sig-block">
+              <div class="cert-sig-line">Dr. V. Seshagiri Rao</div>
+              <div class="cert-sig-role">M.E., M.B.A., Ph.D.</div>
+              <div class="cert-sig-title">Principal</div>
+            </div>
+            <div class="cert-sig-block">
+              <div class="cert-sig-line">S. Jessie Priya</div>
+              <div class="cert-sig-role">M.Com.</div>
+              <div class="cert-sig-title">Executive Director</div>
+            </div>
+            <div class="cert-sig-block">
+              <div class="cert-sig-line">B. Shashi Sekar</div>
+              <div class="cert-sig-role">M.Sc.</div>
+              <div class="cert-sig-title">Managing Director</div>
+            </div>
+            <div class="cert-sig-block">
+              <div class="cert-sig-line">Dr. B. Babu Manoharan</div>
+              <div class="cert-sig-role">M.A., M.B.A., Ph.D.</div>
+              <div class="cert-sig-title">Chairman</div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="cert-footer">
+            <div class="cert-issue-info" id="cert-issue-info">Issued: Academic Year 2025-2026</div>
+            <div class="cert-verify"><i class="fa-solid fa-shield-check"></i> Official Academic Record &bull; St. Joseph's University Portal</div>
+          </div>
+
+        </div><!-- /.certificate-paper -->
+      </div><!-- /.cert-scroll-area -->
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Engine JS -->
+  <script src="app.js"></script>
+</body>
+</html>
