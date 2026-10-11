@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>St. Joseph's University - Academic Information Portal</title>
+  <title>St. Joseph's College of Engineering - Academic Portal</title>
+  <link rel="icon" href="college-mark.svg" type="image/svg+xml">
   
   <!-- Fonts & Core Libraries -->
   <link rel="stylesheet" href="styles.css">
@@ -24,10 +25,8 @@
         
         <!-- Login Card Brand Header -->
         <div class="login-header">
-          <div class="login-brand-icon">
-            <i class="fa-solid fa-building-columns"></i>
-          </div>
-          <h2>St. Joseph's University</h2>
+          <img class="sjce-brand-mark" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
+          <h2>St. Joseph's College of Engineering</h2>
           <p>Academic Management & Student Information Portal</p>
         </div>
 
@@ -88,7 +87,7 @@
         </form>
 
         <div class="login-footer">
-          <p>&copy; 2026 St. Joseph's University Information Systems</p>
+          <p>&copy; 2026 St. Joseph's College of Engineering Information Systems</p>
         </div>
 
       </div>
@@ -103,12 +102,10 @@
     <!-- Top Header -->
     <header class="app-header">
       <div class="brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-building-columns"></i>
-        </div>
+        <img class="sjce-brand-mark" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
         <div class="brand-text">
           <h1>
-            St. Joseph's University 
+            St. Joseph's College of Engineering
             <span class="brand-badge">Admin Portal</span>
           </h1>
           <p>Office of the Registrar & System Administration</p>
@@ -118,11 +115,14 @@
       <div class="header-right">
         <!-- Logged in Admin Profile -->
         <div class="user-profile">
-          <div class="avatar">GM</div>
+          <div class="avatar" id="admin-avatar-box">GM</div>
           <div class="user-info">
             <span class="user-name" id="admin-display-name">GANESHMOORTHY</span>
             <span class="user-role">System Administrator</span>
           </div>
+          <button class="btn btn-secondary btn-sm" onclick="openProfileModal('admin')" title="Edit administrator profile">
+            <i class="fa-solid fa-user-pen"></i> Profile
+          </button>
         </div>
 
         <!-- Header Controls -->
@@ -370,7 +370,7 @@
     <!-- Admin Footer -->
     <footer class="app-footer">
       <div class="footer-bottom">
-        <p>&copy; 2026 St. Joseph's University System Administrator Desk (GANESHMOORTHY). All rights reserved.</p>
+        <p>&copy; 2026 St. Joseph's College of Engineering System Administrator Desk. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -383,14 +383,19 @@
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
-        <div class="brand-icon">
-          <i class="fa-solid fa-user-graduate"></i>
-        </div>
+        <img class="sjce-brand-mark" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
         <div class="brand-text">
-          <h1>St. Joseph's University <span class="brand-badge">Student Portal</span></h1>
+          <h1>St. Joseph's College of Engineering <span class="brand-badge">Student Portal</span></h1>
           <p>Personal Academic Transcript & Achievement Center</p>
         </div>
       </div>
+
+      <nav class="student-header-nav" aria-label="Student dashboard sections">
+        <a class="active" href="#student-overview"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="#student-results"><i class="fa-solid fa-chart-column"></i> Marks</a>
+        <a href="#student-achievements"><i class="fa-solid fa-award"></i> Achievements</a>
+        <a href="#student-identity"><i class="fa-solid fa-qrcode"></i> Identity</a>
+      </nav>
 
       <div class="header-right">
         <!-- Logged in Student Info -->
@@ -403,6 +408,9 @@
         </div>
 
         <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openProfileModal('student')" title="Edit student profile">
+            <i class="fa-solid fa-user-pen"></i> Edit Profile
+          </button>
           <button class="btn btn-danger btn-sm" onclick="handleLogout()">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
           </button>
@@ -411,13 +419,21 @@
     </header>
 
     <div class="app-container">
-      
+      <div class="student-page-banner">
+        <div class="student-page-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div>
+          <h2>My Dashboard</h2>
+          <p>Your academic performance, attendance, and achievements at a glance</p>
+        </div>
+      </div>
+
       <!-- Student Banner -->
-      <div class="student-profile-banner">
+      <div class="student-profile-banner" id="student-overview">
         <div class="student-profile-main">
           <div class="student-large-avatar" id="student-large-avatar">AJ</div>
           <div>
             <h2 id="student-card-name">Alex Johnson</h2>
+            <span class="student-id-label" id="student-card-id">Student ID</span>
             <div class="student-badges-line">
               <span class="meta-badge" id="student-card-dept"><i class="fa-solid fa-building-columns"></i> Computer Science</span>
               <span class="meta-badge" id="student-card-level"><i class="fa-solid fa-layer-group"></i> Sophomore</span>
@@ -433,12 +449,12 @@
       </div>
 
       <!-- Student KPI Metric Cards -->
-      <div class="kpi-grid">
+      <div class="kpi-grid" id="student-metrics">
         <div class="kpi-card kpi-gpa">
           <div class="kpi-details">
             <span class="kpi-title">Overall Cumulative CGPA</span>
             <div class="kpi-value" id="student-kpi-gpa">0.00</div>
-            <span class="kpi-subtext"><i class="fa-solid fa-chart-line"></i> 4.0 Scale Cumulative Average</span>
+            <span class="kpi-subtext"><i class="fa-solid fa-chart-line"></i> 10.00 Scale Cumulative Average</span>
           </div>
           <div class="kpi-icon-wrapper">
             <i class="fa-solid fa-award"></i>
@@ -468,15 +484,151 @@
         </div>
       </div>
 
+      <section class="chart-card student-info-card" aria-labelledby="student-info-title">
+        <div class="chart-header">
+          <h3 id="student-info-title"><i class="fa-solid fa-graduation-cap"></i> Academic Profile</h3>
+        </div>
+        <div class="student-details-grid">
+          <div><span>Student ID</span><strong id="student-info-id">-</strong></div>
+          <div><span>Department</span><strong id="student-info-department">-</strong></div>
+          <div><span>Academic Level</span><strong id="student-info-level">-</strong></div>
+          <div><span>Contact Email</span><strong id="student-info-email">-</strong></div>
+          <div><span>Attendance</span><strong id="student-info-attendance">-</strong></div>
+          <div><span>Academic Standing</span><strong id="student-info-status">-</strong></div>
+        </div>
+      </section>
+
       <!-- Student Content Grid: Subject Marks & Achievements -->
       <div class="student-content-grid">
+
+        <section class="chart-card study-coach-card" id="student-study-coach" aria-labelledby="study-coach-title">
+          <div class="chart-header study-coach-header">
+            <div>
+              <h3 id="study-coach-title"><i class="fa-solid fa-compass"></i> Personalized Study Coach</h3>
+              <span class="text-muted">A weekly plan based on your current marks and attendance</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadStudyPlan()">
+              <i class="fa-solid fa-download"></i> Download 7-Day Plan
+            </button>
+          </div>
+          <p id="study-coach-summary" class="study-coach-summary"></p>
+          <div id="study-coach-priorities" class="coach-priorities"></div>
+          <ol id="study-plan-preview" class="study-plan-list"></ol>
+        </section>
+
+        <section class="chart-card student-tool-card" id="student-timetable" aria-labelledby="student-timetable-title">
+          <div class="chart-header student-tool-header">
+            <div>
+              <h3 id="student-timetable-title"><i class="fa-solid fa-calendar-week"></i> Weekly Class Timetable</h3>
+              <span class="text-muted">Your schedule is saved in this browser</span>
+            </div>
+          </div>
+          <form id="class-schedule-form" class="student-tool-form" onsubmit="saveClassSchedule(event)">
+            <div class="student-tool-form-grid timetable-form-grid">
+              <div class="form-group">
+                <label for="class-course">Course</label>
+                <input id="class-course" class="form-control" type="text" maxlength="100" required placeholder="e.g. Data Structures">
+              </div>
+              <div class="form-group">
+                <label for="class-day">Day</label>
+                <select id="class-day" class="form-control" required>
+                  <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="class-start">Starts</label>
+                <input id="class-start" class="form-control" type="time" required>
+              </div>
+              <div class="form-group">
+                <label for="class-end">Ends</label>
+                <input id="class-end" class="form-control" type="time" required>
+              </div>
+              <div class="form-group">
+                <label for="class-location">Room / Link</label>
+                <input id="class-location" class="form-control" type="text" maxlength="80" placeholder="Optional">
+              </div>
+              <button class="btn btn-primary student-tool-submit" type="submit"><i class="fa-solid fa-plus"></i> Add class</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table student-tool-table">
+              <thead><tr><th>Day</th><th>Time</th><th>Course</th><th>Room / Link</th><th></th></tr></thead>
+              <tbody id="student-timetable-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="chart-card student-tool-card" id="student-assignments" aria-labelledby="student-assignments-title">
+          <div class="chart-header student-tool-header">
+            <div>
+              <h3 id="student-assignments-title"><i class="fa-solid fa-list-check"></i> Assignments & Deadlines</h3>
+              <span class="text-muted">Upcoming work and due-date reminders</span>
+            </div>
+            <button id="enable-reminders-btn" class="btn btn-secondary btn-sm" type="button" onclick="enableAssignmentReminders()">
+              <i class="fa-regular fa-bell"></i> Enable reminders
+            </button>
+          </div>
+          <form id="assignment-form" class="student-tool-form" onsubmit="saveAssignment(event)">
+            <div class="student-tool-form-grid assignment-form-grid">
+              <div class="form-group">
+                <label for="assignment-title">Assignment</label>
+                <input id="assignment-title" class="form-control" type="text" maxlength="120" required placeholder="e.g. Lab report 2">
+              </div>
+              <div class="form-group">
+                <label for="assignment-course">Course</label>
+                <input id="assignment-course" class="form-control" type="text" maxlength="100" required placeholder="Course name">
+              </div>
+              <div class="form-group">
+                <label for="assignment-due">Due date and time</label>
+                <input id="assignment-due" class="form-control" type="datetime-local" required>
+              </div>
+              <button class="btn btn-primary student-tool-submit" type="submit"><i class="fa-solid fa-plus"></i> Add deadline</button>
+            </div>
+            <label class="student-reminder-option"><input id="assignment-remind" type="checkbox" checked> Remind me one hour before</label>
+          </form>
+          <div id="student-assignment-list" class="student-assignment-list" aria-live="polite"></div>
+        </section>
+
+        <section class="chart-card student-tool-card semester-progress-card" id="student-semester-progress" aria-labelledby="semester-progress-title">
+          <div class="chart-header student-tool-header">
+            <div>
+              <h3 id="semester-progress-title"><i class="fa-solid fa-chart-line"></i> Semester Progress</h3>
+              <span class="text-muted">Track CGPA and attendance across terms</span>
+            </div>
+          </div>
+          <div class="semester-chart-container"><canvas id="chartSemesterProgress" aria-label="CGPA progress across semesters"></canvas></div>
+          <form id="semester-progress-form" class="student-tool-form" onsubmit="saveSemesterProgress(event)">
+            <div class="student-tool-form-grid semester-form-grid">
+              <div class="form-group">
+                <label for="progress-term">Term label</label>
+                <input id="progress-term" class="form-control" type="text" maxlength="48" required placeholder="e.g. 2025-2026 · Semester 4">
+              </div>
+              <div class="form-group">
+                <label for="progress-cgpa">CGPA (0-10)</label>
+                <input id="progress-cgpa" class="form-control" type="number" min="0" max="10" step="0.01" required>
+              </div>
+              <div class="form-group">
+                <label for="progress-attendance">Attendance (%)</label>
+                <input id="progress-attendance" class="form-control" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <button class="btn btn-primary student-tool-submit" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save term</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="data-table student-tool-table">
+              <thead><tr><th>Term</th><th>CGPA</th><th>Attendance</th><th></th></tr></thead>
+              <tbody id="semester-progress-list"></tbody>
+            </table>
+          </div>
+        </section>
         
         <!-- Left: Subject Marksheet & Arrear Status Table -->
-        <div class="chart-card" style="grid-column: span 2;">
+        <div class="chart-card student-marks-card" id="student-results" style="grid-column: span 2;">
           <div class="chart-header">
             <h3><i class="fa-solid fa-file-signature"></i> Subject Marksheet & Arrear Status</h3>
             <span class="text-muted">Enrolled Courses & Standing</span>
           </div>
+          <div id="subject-performance-summary" class="mini-stats-row"></div>
           <div class="table-responsive">
             <table class="data-table">
               <thead>
@@ -495,7 +647,7 @@
         </div>
 
         <!-- Right: Academic Achievements Wall -->
-        <div class="chart-card">
+        <div class="chart-card" id="student-achievements">
           <div class="chart-header">
             <h3><i class="fa-solid fa-trophy" style="color: var(--warning);"></i> Academic Achievements</h3>
             <span class="text-muted">Certificates & Badges</span>
@@ -505,18 +657,64 @@
           </div>
         </div>
 
+        <div class="chart-card qr-card" id="student-identity" style="grid-column: 1 / -1;">
+          <div class="chart-header">
+            <h3><i class="fa-solid fa-qrcode"></i> Student QR Identity</h3>
+            <span class="text-muted">Scan to open verification profile</span>
+          </div>
+          <div class="qr-profile-wrap">
+            <img id="student-qr-image" class="student-qr-image" src="" alt="Student QR Code">
+            <div class="qr-profile-meta">
+              <strong id="student-qr-name">Student Name</strong>
+              <span id="student-qr-id">STU000</span>
+              <a id="student-qr-link" href="#" target="_blank" rel="noopener">Open Student Profile</a>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
 
+    <nav class="student-mobile-tabs" aria-label="Student dashboard navigation">
+      <a class="active" href="#student-overview"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a href="#student-results"><i class="fa-solid fa-award"></i><span>Marks</span></a>
+      <a href="#student-achievements"><i class="fa-solid fa-briefcase"></i><span>Honors</span></a>
+      <a href="#student-identity"><i class="fa-solid fa-qrcode"></i><span>Profile</span></a>
+    </nav>
+
     <!-- Student Footer -->
     <footer class="app-footer">
       <div class="footer-bottom">
-        <p>&copy; 2026 St. Joseph's University Student Self-Service Portal. All rights reserved.</p>
+        <p>&copy; 2026 St. Joseph's College of Engineering Student Self-Service Portal. All rights reserved.</p>
       </div>
     </footer>
   </div>
 
+
+  <div id="profile-modal" class="modal-overlay">
+    <div class="modal-card profile-modal-card">
+      <div class="modal-header">
+        <h3 id="profile-modal-title">Edit Profile</h3>
+        <button class="close-btn" onclick="closeProfileModal()" aria-label="Close profile editor">&times;</button>
+      </div>
+      <form id="profile-form" onsubmit="handleProfileSave(event)">
+        <div class="form-group">
+          <label for="profile-name">Display name</label>
+          <input id="profile-name" class="form-control" type="text" maxlength="100" required>
+        </div>
+        <div class="form-group">
+          <label for="profile-email">Email address</label>
+          <input id="profile-email" class="form-control" type="email" maxlength="160" required>
+        </div>
+        <p id="profile-id-note" class="profile-id-note"></p>
+        <div class="profile-modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal for Add/Edit Student (Admin Only) -->
   <div id="student-modal" class="modal-overlay">
@@ -542,11 +740,17 @@
 
           <div class="form-group">
             <label for="form-department">Academic Department *</label>
-            <select id="form-department" class="form-control" required>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Data Science">Data Science</option>
+            <select id="form-department" class="form-control" required onchange="renderDepartmentSubjectFields()">
+              <option value="Computer Science & Engineering">Computer Science & Engineering</option>
               <option value="Information Technology">Information Technology</option>
-              <option value="Electrical Engineering">Electrical Engineering</option>
+              <option value="Data Science">Data Science</option>
+              <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
+              <option value="Electrical & Electronics Engineering">Electrical & Electronics Engineering</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Chemical Engineering">Chemical Engineering</option>
+              <option value="Biotechnology">Biotechnology</option>
+              <option value="Master of Business Administration">Master of Business Administration</option>
             </select>
           </div>
 
@@ -560,6 +764,48 @@
             </select>
           </div>
 
+          <div class="form-group">
+            <label for="form-academic-year">Academic Year</label>
+            <input type="text" id="form-academic-year" class="form-control" maxlength="20" placeholder="2025-2026">
+          </div>
+
+          <div class="form-group">
+            <label for="form-year">Year</label>
+            <select id="form-year" class="form-control">
+              <option value="">Not specified</option>
+              <option value="1">Year 1</option>
+              <option value="2">Year 2</option>
+              <option value="3">Year 3</option>
+              <option value="4">Year 4</option>
+              <option value="5">Year 5</option>
+              <option value="6">Year 6</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-semester">Semester</label>
+            <select id="form-semester" class="form-control">
+              <option value="">Not specified</option>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+              <option value="3">Semester 3</option>
+              <option value="4">Semester 4</option>
+              <option value="5">Semester 5</option>
+              <option value="6">Semester 6</option>
+              <option value="7">Semester 7</option>
+              <option value="8">Semester 8</option>
+              <option value="9">Semester 9</option>
+              <option value="10">Semester 10</option>
+              <option value="11">Semester 11</option>
+              <option value="12">Semester 12</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-section">Section</label>
+            <input type="text" id="form-section" class="form-control" maxlength="12" placeholder="A">
+          </div>
+
           <div class="form-group full-width">
             <label for="form-attendance">Attendance Rate (%) *</label>
             <input type="number" id="form-attendance" class="form-control" min="0" max="100" step="0.1" required placeholder="85.0">
@@ -567,33 +813,10 @@
 
           <!-- Subject Marks -->
           <div class="form-group full-width" style="margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
-            <label style="font-weight: 700; color: var(--primary-text);"><i class="fa-solid fa-graduation-cap"></i> Subject Performance Scores (0 - 100%)</label>
+            <label style="font-weight: 700; color: var(--primary-text);"><i class="fa-solid fa-graduation-cap"></i> Department-Specific Subject Performance Scores (0 - 100%)</label>
           </div>
 
-          <div class="form-group">
-            <label for="score-math">Mathematics</label>
-            <input type="number" id="score-math" class="form-control" min="0" max="100" value="80">
-          </div>
-
-          <div class="form-group">
-            <label for="score-physics">Physics</label>
-            <input type="number" id="score-physics" class="form-control" min="0" max="100" value="75">
-          </div>
-
-          <div class="form-group">
-            <label for="score-cs">Computer Science</label>
-            <input type="number" id="score-cs" class="form-control" min="0" max="100" value="85">
-          </div>
-
-          <div class="form-group">
-            <label for="score-english">English</label>
-            <input type="number" id="score-english" class="form-control" min="0" max="100" value="80">
-          </div>
-
-          <div class="form-group full-width">
-            <label for="score-history">History</label>
-            <input type="number" id="score-history" class="form-control" min="0" max="100" value="82">
-          </div>
+          <div id="department-subjects-container" class="department-subjects-container"></div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
@@ -630,51 +853,40 @@
       <div class="cert-scroll-area">
         <div id="certificate-canvas" class="certificate-paper">
 
-          <!-- Gold Corner Accents -->
+          <!-- College certificate frame -->
           <div class="cert-corner cert-corner-tl"></div>
           <div class="cert-corner cert-corner-tr"></div>
           <div class="cert-corner cert-corner-bl"></div>
           <div class="cert-corner cert-corner-br"></div>
 
-          <!-- Header -->
           <div class="cert-header">
             <div class="cert-logo-block">
-              <div class="cert-logo-icon"><i class="fa-solid fa-building-columns"></i></div>
+              <img class="cert-college-logo" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
               <div class="cert-logo-text">
                 <div class="cert-university-tagline">You Choose, We Do It</div>
-                <div class="cert-university-name">St. Joseph's University</div>
+                <div class="cert-university-name">St. Joseph's College of Engineering</div>
                 <div class="cert-university-sub">(An Autonomous Institution)</div>
                 <div class="cert-university-group">St. Joseph's Group of Institutions</div>
                 <div class="cert-university-loc">OMR, Chennai &ndash; 119</div>
               </div>
-              <div class="cert-logo-badge">
-                <div class="cert-badge-circle">
-                  <span class="cert-badge-year">32</span>
-                  <span class="cert-badge-sub">Years of Excellence</span>
-                </div>
+              <div class="cert-seal cert-seal-years" aria-label="32 years of excellence">
+                <span class="cert-badge-year">32</span>
+                <span class="cert-badge-sub">Years of<br>Excellence</span>
               </div>
             </div>
-            <div class="cert-header-divider"></div>
+            <div class="cert-header-divider"><span>OFFICE OF ACADEMIC AFFAIRS</span></div>
           </div>
 
-          <!-- Certificate Body -->
           <div class="cert-body">
             <div class="cert-type-label" id="cert-type-label">Certificate of Achievement</div>
-            <div class="cert-presented-to">This is to certify that</div>
+            <div class="cert-presented-to">This certificate is proudly presented to</div>
             <div class="cert-student-name" id="cert-student-name">Student Name</div>
-            <div class="cert-student-id-line" id="cert-student-id-line">Student ID &bull; Department</div>
+            <div class="cert-student-rule"></div>
             <div class="cert-description" id="cert-description">has fulfilled all academic requirements.</div>
-            <div class="cert-academic-term" id="cert-academic-term">Academic Year &bull; Semester</div>
+            <div class="cert-student-id-line" id="cert-student-id-line">Student ID &bull; Department</div>
+            <div class="cert-academic-term" id="cert-academic-term">Academic Year</div>
           </div>
 
-          <!-- Decorative Medal Strip -->
-          <div class="cert-medal-strip">
-            <div class="cert-medal-icon" id="cert-medal-icon">
-              <i class="fa-solid fa-award"></i>
-            </div>
-          </div>
-
-          <!-- Signature Block -->
           <div class="cert-signatures">
             <div class="cert-sig-block">
               <div class="cert-sig-line">Dr. V. Seshagiri Rao</div>
@@ -698,10 +910,14 @@
             </div>
           </div>
 
-          <!-- Footer -->
           <div class="cert-footer">
             <div class="cert-issue-info" id="cert-issue-info">Issued: Academic Year 2025-2026</div>
-            <div class="cert-verify"><i class="fa-solid fa-shield-check"></i> Official Academic Record &bull; St. Joseph's University Portal</div>
+            <div class="cert-verify-block">
+              <a id="cert-verify-link" class="cert-verify-link" href="#" target="_blank" rel="noopener">
+                <img id="cert-qr-image" class="cert-qr-image" src="" alt="Certificate verification QR code">
+              </a>
+              <div class="cert-verify"><i class="fa-solid fa-shield-halved"></i> Scan to verify in the student portal</div>
+            </div>
           </div>
 
         </div><!-- /.certificate-paper -->

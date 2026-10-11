@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate Verification | St. Joseph's College of Engineering</title>
+  <link rel="icon" href="college-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="public-verification-page">
+  <main class="public-verification-shell">
+    <section class="public-verification-card" aria-live="polite">
+      <header class="public-verification-header">
+        <img class="sjce-brand-mark" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
+        <div>
+          <h1>Certificate Verification</h1>
+          <p>St. Joseph's College of Engineering</p>
+        </div>
+      </header>
+      <div id="certificate-verification-result" class="public-verification-result">
+        <span class="verification-loader-icon"><i class="fa-solid fa-spinner fa-spin"></i></span>
+        <p>Checking certificate record...</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    async function verifyCertificate() {
+      const params = new URLSearchParams(window.location.search);
+      const studentId = params.get('id');
+      const certificateType = params.get('type');
+      const result = document.getElementById('certificate-verification-result');
+
+      if (!studentId || !certificateType) {
+        showVerificationError('This verification link is missing its certificate details.');
+        return;
+      }
+
+      try {
+        const url = `/api/certificates/${encodeURIComponent(studentId)}/${encodeURIComponent(certificateType)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok || !data.verified) {
+          throw new Error(data.error || 'Certificate record could not be verified.');
+        }
+
+        result.className = 'public-verification-result verified';
+        const icon = document.createElement('div');
+        icon.className = 'public-verification-icon';
+        icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        const title = document.createElement('h2');
+        title.textContent = 'Certificate Verified';
+        const award = document.createElement('p');
+        award.className = 'verified-award-name';
+        award.textContent = data.award;
+        const student = document.createElement('p');
+        student.className = 'verified-student-name';
+        student.textContent = data.student.name;
+        const details = document.createElement('dl');
+        details.className = 'verified-details';
+        [
+          ['Certificate ID', data.certificate_id],
+          ['Student ID', data.student.id],
+          ['Department', data.student.department],
+          ['Year', data.student.grade_level]
+        ].forEach(([label, value]) => {
+          const row = document.createElement('div');
+          const term = document.createElement('dt');
+          term.textContent = label;
+          const description = document.createElement('dd');
+          description.textContent = value;
+          row.append(term, description);
+          details.append(row);
+        });
+        result.replaceChildren(icon, title, award, student, details);
+      } catch (error) {
+        showVerificationError(error.message || 'Certificate record could not be verified.');
+      }
+    }
+
+    function showVerificationError(message) {
+      const result = document.getElementById('certificate-verification-result');
+      result.className = 'public-verification-result invalid';
+      const icon = document.createElement('div');
+      icon.className = 'public-verification-icon';
+      icon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+      const title = document.createElement('h2');
+      title.textContent = 'Certificate Not Verified';
+      const detail = document.createElement('p');
+      detail.textContent = message;
+      result.replaceChildren(icon, title, detail);
+    }
+
+    verifyCertificate();
+  </script>
+</body>
+</html>

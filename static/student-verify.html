@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Verification | St. Joseph's College of Engineering</title>
+  <link rel="icon" href="college-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="verification-body">
+  <div class="verification-shell">
+    <div class="verification-card">
+      <div class="verification-header">
+        <img class="sjce-brand-mark" src="college-mark.svg" alt="St. Joseph's College of Engineering emblem">
+        <div>
+          <h1>Student Verification</h1>
+          <p>St. Joseph's College of Engineering</p>
+        </div>
+        <div class="verification-header-actions">
+          <button type="button" onclick="window.print()"><i class="fa-solid fa-download"></i> Student report</button>
+          <a href="/" aria-label="Open academic portal"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </div>
+      </div>
+
+      <div id="verification-content" class="verification-content">
+        <div class="verification-loader">Loading student profile...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEPARTMENT_SUBJECTS = {
+      'Computer Science & Engineering': [
+        'Data Structures & Algorithms', 'Computer Architecture', 'Operating Systems', 'Database Management Systems', 'Software Engineering', 'Artificial Intelligence', 'Data Structures Lab', 'Object-Oriented Programming Lab', 'DBMS Lab', 'Operating Systems Lab'
+      ],
+      'Information Technology': [
+        'Discrete Mathematics', 'Web Technologies', 'Computer Networks', 'Cloud Computing', 'Database Management Systems', 'Software Engineering', 'Web Technologies Lab', 'Computer Networks Lab', 'Cloud Computing Lab', 'IT Project Lab'
+      ],
+      'Data Science': [
+        'Probability and Statistics', 'Linear Algebra', 'Programming for Data Science', 'Data Structures for Data Science', 'Data Management Systems', 'Data Visualization', 'Machine Learning', 'Data Mining', 'Big Data Analytics', 'Data Science Project'
+      ],
+      'Electronics & Communication Engineering': [
+        'Electronic Circuits', 'Digital Logic Design', 'VLSI Design', 'Signal Processing', 'Communication Systems', 'Microprocessors & Microcontrollers', 'Electronic Devices Lab', 'Digital Signal Processing Lab', 'Communication Lab', 'VLSI Lab'
+      ],
+      'Electrical & Electronics Engineering': [
+        'Electric Circuits', 'Electrical Machines', 'Power Electronics', 'Control Systems', 'Power Systems', 'Electrical Measurements', 'Electrical Machines Lab', 'Power Electronics Lab', 'Simulation Lab', 'Measurements Lab'
+      ],
+      'Civil Engineering': [
+        'Mechanics of Solids', 'Structural Analysis', 'Environmental Engineering', 'Surveying', 'Construction Materials', 'Geotechnical Engineering', 'Surveying Lab', 'Materials Testing Lab', 'Hydraulics Lab', 'Concrete Lab'
+      ],
+      'Mechanical Engineering': [
+        'Thermodynamics', 'Engineering Mechanics', 'Machine Dynamics', 'Manufacturing Technology', 'CAD/CAM', 'Fluid Mechanics', 'Thermal Engineering Lab', 'Manufacturing Lab', 'CAD Lab', 'Design Lab'
+      ],
+      'Chemical Engineering': [
+        'Process Calculations', 'Chemical Engineering Thermodynamics', 'Mass Transfer', 'Heat Transfer', 'Chemical Reaction Engineering', 'Fluid Mechanics', 'Process Equipment Lab', 'Chemical Engineering Lab', 'Heat Transfer Lab', 'Mass Transfer Lab'
+      ],
+      'Biotechnology': [
+        'Cell Biology', 'Biochemistry', 'Molecular Biology', 'Microbiology', 'Bioprocess Engineering', 'Genetic Engineering', 'Cell Biology Lab', 'Biochemistry Lab', 'Microbiology Lab', 'Bioprocess Lab'
+      ],
+      'Master of Business Administration': [
+        'Principles of Management', 'Financial Accounting', 'Marketing Management', 'Human Resource Management', 'Strategic Management', 'Business Analytics', 'Operations Management', 'Internship', 'Business Project', 'Leadership Lab'
+      ]
+    };
+
+    function getStudentIdFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id') || '';
+    }
+
+    function formatCgpa(value) {
+      return `${Number(value || 0).toFixed(2)} / 10.00`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    }
+
+    async function loadStudentProfile() {
+      const studentId = getStudentIdFromQuery();
+      const container = document.getElementById('verification-content');
+      if (!studentId) {
+        container.innerHTML = '<div class="verification-error"><i class="fa-solid fa-triangle-exclamation"></i> No student ID was provided.</div>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/students/${encodeURIComponent(studentId)}`);
+        if (!response.ok) {
+          throw new Error('Student not found');
+        }
+
+        const data = await response.json();
+        const student = data.student || {};
+        const scores = student.subject_marksheet || Object.entries(student.scores || {}).map(([subject, score]) => ({ subject, score }));
+        const academicYear = student.academic_year || 'Not recorded';
+        const yearLabel = student.year ? `Year ${student.year}` : 'Not recorded';
+        const semesterLabel = student.semester ? `Semester ${student.semester}` : 'Not recorded';
+        const sectionLabel = student.section || 'Not recorded';
+        const performance = student.academic_performance || {};
+        const rows = scores.map(item => {
+          const term = [item.academic_year, item.year ? `Year ${item.year}` : '', item.semester ? `Sem ${item.semester}` : '', item.section ? `Section ${item.section}` : '']
+            .filter(Boolean).join(' · ') || 'Term not recorded';
+          return `
+          <tr>
+            <td>${escapeHtml(item.subject)}</td>
+            <td>${escapeHtml(item.subject_scope || 'Recorded mark')}</td>
+            <td>${escapeHtml(term)}</td>
+            <td>${Number(item.score || 0).toFixed(1)}%</td>
+            <td>${escapeHtml(item.grade || '—')}</td>
+            <td>${escapeHtml(item.status || 'Recorded')}</td>
+          </tr>
+        `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="verification-top-grid">
+            <div>
+              <div class="verification-badge">${escapeHtml(student.department || 'Department')}</div>
+              <h2>${escapeHtml(student.name || 'Student Name')}</h2>
+              <p><strong>Student ID:</strong> ${escapeHtml(student.id || studentId)}</p>
+              <p><strong>Academic level:</strong> ${escapeHtml(student.grade_level || 'Not recorded')}</p>
+            </div>
+            <div class="verification-qr-box">
+              <img src="${escapeHtml(student.qr_code || '')}" alt="Unique QR code for ${escapeHtml(student.name || 'student')}" />
+            </div>
+          </div>
+
+          <div class="verification-stats">
+            <div class="stat-pill"><span>CGPA</span><strong>${formatCgpa(student.gpa)}</strong></div>
+            <div class="stat-pill"><span>Attendance</span><strong>${Number(student.attendance || 0).toFixed(1)}%</strong></div>
+            <div class="stat-pill"><span>Status</span><strong>${escapeHtml(student.status || 'Good Standing')}</strong></div>
+            <div class="stat-pill"><span>Average mark</span><strong>${performance.average_mark == null ? 'Not recorded' : `${Number(performance.average_mark).toFixed(1)}%`}</strong></div>
+            <div class="stat-pill"><span>Pass rate</span><strong>${performance.pass_rate == null ? 'Not recorded' : `${Number(performance.pass_rate).toFixed(1)}%`}</strong></div>
+            <div class="stat-pill"><span>Subjects recorded</span><strong>${scores.length}</strong></div>
+          </div>
+
+          <div class="verification-section">
+            <h3>Academic Profile</h3>
+            <div class="info-grid">
+              <div><label>Register number</label><strong>${escapeHtml(student.id || studentId)}</strong></div>
+              <div><label>Department</label><strong>${escapeHtml(student.department || 'N/A')}</strong></div>
+              <div><label>Academic year</label><strong>${escapeHtml(academicYear)}</strong></div>
+              <div><label>Year</label><strong>${escapeHtml(yearLabel)}</strong></div>
+              <div><label>Semester</label><strong>${escapeHtml(semesterLabel)}</strong></div>
+              <div><label>Section</label><strong>${escapeHtml(sectionLabel)}</strong></div>
+              <div><label>Email</label><strong>${escapeHtml(student.email || 'N/A')}</strong></div>
+              <div><label>Strongest subject</label><strong>${escapeHtml(performance.strongest_subject || 'Not recorded')}</strong></div>
+              <div><label>Needs attention</label><strong>${escapeHtml(performance.needs_attention || 'Not recorded')}</strong></div>
+            </div>
+          </div>
+
+          <div class="verification-section">
+            <h3>Subject-wise Performance</h3>
+            <div class="verification-table-wrap">
+              <table class="verification-table">
+                <thead><tr><th>Subject</th><th>Course scope</th><th>Academic period</th><th>Mark</th><th>Grade</th><th>Status</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="6">No subject marks have been recorded.</td></tr>'}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <p class="verification-note">This profile is linked to student record ${escapeHtml(student.id || studentId)}. Academic year, semester, and section are shown only when recorded by the institution.</p>
+        `;
+      } catch (error) {
+        container.innerHTML = '<div class="verification-error"><i class="fa-solid fa-circle-xmark"></i> Student profile could not be loaded. Please verify the QR code or student ID.</div>';
+      }
+    }
+
+    loadStudentProfile();
+  </script>
+</body>
+</html>

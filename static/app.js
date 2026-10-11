@@ -1,5 +1,5 @@
 /**
- * St. Joseph's University Academic Management System - Client Engine
+ * St. Joseph's College of Engineering Academic Management System - Client Engine
  * ==================================================================
  * Multi-Role Client Engine (Admin Control Center & Student Self-Service Portal)
  */
@@ -16,17 +16,112 @@ let state = {
   currentAuth: JSON.parse(sessionStorage.getItem('sju_auth') || 'null')
 };
 
+const DEPARTMENT_SUBJECTS = {
+  'Computer Science & Engineering': [
+    'Data Structures & Algorithms', 'Computer Architecture', 'Operating Systems', 'Database Management Systems',
+    'Software Engineering', 'Artificial Intelligence', 'Data Structures Lab', 'Object-Oriented Programming Lab',
+    'DBMS Lab', 'Operating Systems Lab'
+  ],
+  'Information Technology': [
+    'Discrete Mathematics', 'Web Technologies', 'Computer Networks', 'Cloud Computing', 'Database Management Systems',
+    'Software Engineering', 'Web Technologies Lab', 'Computer Networks Lab', 'Cloud Computing Lab', 'IT Project Lab'
+  ],
+  'Data Science': [
+    'Probability and Statistics', 'Linear Algebra', 'Programming for Data Science', 'Data Structures for Data Science',
+    'Data Management Systems', 'Data Visualization', 'Machine Learning', 'Data Mining', 'Big Data Analytics', 'Data Science Project'
+  ],
+  'Electronics & Communication Engineering': [
+    'Electronic Circuits', 'Digital Logic Design', 'VLSI Design', 'Signal Processing', 'Communication Systems',
+    'Microprocessors & Microcontrollers', 'Electronic Devices Lab', 'Digital Signal Processing Lab', 'Communication Lab', 'VLSI Lab'
+  ],
+  'Electrical & Electronics Engineering': [
+    'Electric Circuits', 'Electrical Machines', 'Power Electronics', 'Control Systems', 'Power Systems',
+    'Electrical Measurements', 'Electrical Machines Lab', 'Power Electronics Lab', 'Simulation Lab', 'Measurements Lab'
+  ],
+  'Civil Engineering': [
+    'Mechanics of Solids', 'Structural Analysis', 'Environmental Engineering', 'Surveying', 'Construction Materials',
+    'Geotechnical Engineering', 'Surveying Lab', 'Materials Testing Lab', 'Hydraulics Lab', 'Concrete Lab'
+  ],
+  'Mechanical Engineering': [
+    'Thermodynamics', 'Engineering Mechanics', 'Machine Dynamics', 'Manufacturing Technology', 'CAD/CAM',
+    'Fluid Mechanics', 'Thermal Engineering Lab', 'Manufacturing Lab', 'CAD Lab', 'Design Lab'
+  ],
+  'Chemical Engineering': [
+    'Process Calculations', 'Chemical Engineering Thermodynamics', 'Mass Transfer', 'Heat Transfer',
+    'Chemical Reaction Engineering', 'Fluid Mechanics', 'Process Equipment Lab', 'Chemical Engineering Lab', 'Heat Transfer Lab', 'Mass Transfer Lab'
+  ],
+  'Biotechnology': [
+    'Cell Biology', 'Biochemistry', 'Molecular Biology', 'Microbiology', 'Bioprocess Engineering',
+    'Genetic Engineering', 'Cell Biology Lab', 'Biochemistry Lab', 'Microbiology Lab', 'Bioprocess Lab'
+  ],
+  'Master of Business Administration': [
+    'Principles of Management', 'Financial Accounting', 'Marketing Management', 'Human Resource Management',
+    'Strategic Management', 'Business Analytics', 'Operations Management', 'Internship', 'Business Project', 'Leadership Lab'
+  ]
+};
+
+function formatCgpa(value) {
+  const number = Number(value || 0);
+  return `${number.toFixed(2)} / 10.00`;
+}
+
+function getDepartmentSubjects(dept) {
+  const normalized = String(dept || 'Computer Science & Engineering').trim();
+  if (DEPARTMENT_SUBJECTS[normalized]) return DEPARTMENT_SUBJECTS[normalized];
+  const directMatch = Object.keys(DEPARTMENT_SUBJECTS).find(key => key.toLowerCase() === normalized.toLowerCase());
+  if (directMatch) return DEPARTMENT_SUBJECTS[directMatch];
+  return DEPARTMENT_SUBJECTS['Computer Science & Engineering'];
+}
+
+function calculateLocalCGPA(scores) {
+  const entries = Object.entries(scores || {});
+  if (!entries.length) return 0.0;
+  const avg = entries.reduce((sum, [, val]) => sum + Number(val || 0), 0) / entries.length;
+  return parseFloat((avg / 10.0).toFixed(2));
+}
+
+function determineLocalStatus(gpa, attendance) {
+  if (gpa < 5.0 || attendance < 75) return 'At-Risk';
+  if (gpa >= 8.5 && attendance >= 90) return 'Honor Roll';
+  return 'Good Standing';
+}
+
+function generateStudentQRCodeUrl(studentId) {
+  const profileUrl = new URL('/student-verify.html', window.location.origin);
+  profileUrl.searchParams.set('id', studentId || 'STU000');
+  return generateQRCodeUrl(profileUrl.toString());
+}
+
+function generateQRCodeUrl(data) {
+  const qrUrl = new URL('/api/qr.png', window.location.origin);
+  qrUrl.searchParams.set('data', data);
+  return qrUrl.toString();
+}
+
 // Chart.js Instances
 let chartSubjectAvg = null;
 let chartGradeDist = null;
 let chartScatter = null;
 let chartDeptGpa = null;
+let chartSemesterProgress = null;
+let assignmentReminderInterval = null;
 
 // Initialize Application on DOM Load
 document.addEventListener('DOMContentLoaded', () => {
+  initStudentNavigation();
   initTheme();
   initApp();
 });
+
+function initStudentNavigation() {
+  const links = document.querySelectorAll('.student-header-nav a, .student-mobile-tabs a');
+  const syncActiveLink = (hash = window.location.hash || '#student-overview') => {
+    links.forEach(link => link.classList.toggle('active', link.hash === hash));
+  };
+  links.forEach(link => link.addEventListener('click', () => syncActiveLink(link.hash)));
+  window.addEventListener('hashchange', () => syncActiveLink());
+  syncActiveLink();
+}
 
 function initTheme() {
   document.body.setAttribute('data-theme', state.theme);
@@ -74,6 +169,7 @@ async function initApp() {
 
   if (state.currentAuth.role === 'admin') {
     showView('view-admin');
+    renderAdminProfile();
     await fetchAllAdminData();
     renderKPIs();
     renderCharts();
@@ -82,6 +178,79 @@ async function initApp() {
   } else if (state.currentAuth.role === 'student') {
     showView('view-student');
     await fetchStudentPortalData(state.currentAuth.student.id);
+  }
+}
+
+function renderAdminProfile() {
+  if (!state.currentAuth || state.currentAuth.role !== 'admin') return;
+  const savedProfile = JSON.parse(localStorage.getItem('sju_admin_profile') || '{}');
+  const user = state.currentAuth.user || {};
+  const profile = {
+    name: savedProfile.name || user.name || 'Administrator',
+    email: savedProfile.email || user.email || ''
+  };
+  const nameElement = document.getElementById('admin-display-name');
+  const avatarElement = document.getElementById('admin-avatar-box');
+  if (nameElement) nameElement.textContent = profile.name;
+  if (avatarElement) avatarElement.textContent = profile.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function openProfileModal(role) {
+  if (!state.currentAuth || state.currentAuth.role !== role) return;
+  const nameInput = document.getElementById('profile-name');
+  const emailInput = document.getElementById('profile-email');
+  const note = document.getElementById('profile-id-note');
+  const isStudent = role === 'student';
+  const profile = isStudent ? state._portalStudent : JSON.parse(localStorage.getItem('sju_admin_profile') || '{}');
+  const user = isStudent ? profile : { ...(state.currentAuth.user || {}), ...profile };
+  if (!user) return;
+
+  document.getElementById('profile-modal-title').textContent = isStudent ? 'Edit Student Profile' : 'Edit Administrator Profile';
+  nameInput.value = user.name || '';
+  emailInput.value = user.email || '';
+  note.textContent = isStudent ? `Student ID: ${user.id}` : 'Administrator profile is saved in this browser.';
+  note.hidden = false;
+  document.getElementById('profile-modal').classList.add('active');
+}
+
+function closeProfileModal() {
+  document.getElementById('profile-modal').classList.remove('active');
+}
+
+async function handleProfileSave(event) {
+  event.preventDefault();
+  const name = document.getElementById('profile-name').value.trim();
+  const email = document.getElementById('profile-email').value.trim();
+  if (!name || !email) return;
+
+  if (state.currentAuth.role === 'admin') {
+    const profile = { name, email };
+    localStorage.setItem('sju_admin_profile', JSON.stringify(profile));
+    state.currentAuth.user = { ...state.currentAuth.user, ...profile };
+    sessionStorage.setItem('sju_auth', JSON.stringify(state.currentAuth));
+    renderAdminProfile();
+    closeProfileModal();
+    showToast('Administrator profile saved in this browser.', 'success');
+    return;
+  }
+
+  const student = state._portalStudent;
+  if (!student) return;
+  try {
+    const response = await fetch(`/api/students/${encodeURIComponent(student.id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Profile could not be saved.');
+    }
+    closeProfileModal();
+    await fetchStudentPortalData(student.id);
+    showToast('Student profile updated.', 'success');
+  } catch (error) {
+    showToast(error.message || 'Profile could not be saved.', 'danger');
   }
 }
 
@@ -235,16 +404,16 @@ function loadFallbackData() {
     state.students = JSON.parse(local);
   } else {
     state.students = [
-      { id: "STU001", name: "Alex Johnson", email: "alex.j@stjosephs.edu", department: "Computer Science", grade_level: "Sophomore", attendance: 92.5, scores: { Mathematics: 88, Physics: 82, "Computer Science": 95, English: 78, History: 84 }, gpa: 3.65, status: "Good Standing" },
-      { id: "STU002", name: "Sophia Martinez", email: "sophia.m@stjosephs.edu", department: "Data Science", grade_level: "Junior", attendance: 96.0, scores: { Mathematics: 94, Physics: 90, "Computer Science": 98, English: 88, History: 91 }, gpa: 3.92, status: "Honor Roll" },
-      { id: "STU003", name: "Ethan Brown", email: "ethan.b@stjosephs.edu", department: "Electrical Engineering", grade_level: "Freshman", attendance: 68.0, scores: { Mathematics: 45, Physics: 48, "Computer Science": 70, English: 65, History: 60 }, gpa: 2.15, status: "At-Risk" },
-      { id: "STU004", name: "Emma Wilson", email: "emma.w@stjosephs.edu", department: "Computer Science", grade_level: "Senior", attendance: 88.0, scores: { Mathematics: 76, Physics: 80, "Computer Science": 89, English: 92, History: 85 }, gpa: 3.44, status: "Good Standing" },
-      { id: "STU005", name: "Liam Davis", email: "liam.d@stjosephs.edu", department: "Information Technology", grade_level: "Sophomore", attendance: 71.5, scores: { Mathematics: 64, Physics: 42, "Computer Science": 72, English: 68, History: 62 }, gpa: 2.38, status: "At-Risk" },
-      { id: "STU006", name: "Olivia Taylor", email: "olivia.t@stjosephs.edu", department: "Data Science", grade_level: "Senior", attendance: 94.0, scores: { Mathematics: 92, Physics: 88, "Computer Science": 96, English: 90, History: 87 }, gpa: 3.81, status: "Honor Roll" },
-      { id: "STU007", name: "Noah Anderson", email: "noah.a@stjosephs.edu", department: "Electrical Engineering", grade_level: "Junior", attendance: 85.5, scores: { Mathematics: 81, Physics: 85, "Computer Science": 78, English: 82, History: 79 }, gpa: 3.25, status: "Good Standing" },
-      { id: "STU008", name: "Ava Thomas", email: "ava.t@stjosephs.edu", department: "Information Technology", grade_level: "Freshman", attendance: 91.0, scores: { Mathematics: 85, Physics: 79, "Computer Science": 88, English: 94, History: 90 }, gpa: 3.58, status: "Good Standing" },
-      { id: "STU009", name: "Lucas White", email: "lucas.w@stjosephs.edu", department: "Computer Science", grade_level: "Junior", attendance: 62.0, scores: { Mathematics: 42, Physics: 45, "Computer Science": 68, English: 60, History: 58 }, gpa: 1.95, status: "At-Risk" },
-      { id: "STU010", name: "Isabella Harris", email: "isabella.h@stjosephs.edu", department: "Data Science", grade_level: "Sophomore", attendance: 98.5, scores: { Mathematics: 96, Physics: 92, "Computer Science": 99, English: 95, History: 93 }, gpa: 3.98, status: "Honor Roll" }
+      { id: 'STU001', name: 'Alex Johnson', email: 'alex.j@stjosephs.edu', department: 'Computer Science & Engineering', grade_level: 'Sophomore', attendance: 92.5, scores: { 'Data Structures & Algorithms': 88, 'Operating Systems': 82, 'Database Management Systems': 95, 'Software Engineering': 78, 'Artificial Intelligence': 84 }, gpa: 8.53, status: 'Good Standing', qr_code: generateStudentQRCodeUrl('STU001') },
+      { id: 'STU002', name: 'Sophia Martinez', email: 'sophia.m@stjosephs.edu', department: 'Information Technology', grade_level: 'Junior', attendance: 96.0, scores: { 'Discrete Mathematics': 94, 'Web Technologies': 90, 'Computer Networks': 98, 'Cloud Computing': 88, 'Database Management Systems': 91 }, gpa: 9.20, status: 'Honor Roll', qr_code: generateStudentQRCodeUrl('STU002') },
+      { id: 'STU003', name: 'Ethan Brown', email: 'ethan.b@stjosephs.edu', department: 'Electrical & Electronics Engineering', grade_level: 'Freshman', attendance: 68.0, scores: { 'Electric Circuits': 45, 'Electrical Machines': 48, 'Power Electronics': 70, 'Control Systems': 65, 'Power Systems': 60 }, gpa: 5.76, status: 'At-Risk', qr_code: generateStudentQRCodeUrl('STU003') },
+      { id: 'STU004', name: 'Emma Wilson', email: 'emma.w@stjosephs.edu', department: 'Computer Science & Engineering', grade_level: 'Senior', attendance: 88.0, scores: { 'Data Structures & Algorithms': 76, 'Operating Systems': 80, 'Database Management Systems': 89, 'Software Engineering': 92, 'Artificial Intelligence': 85 }, gpa: 8.44, status: 'Good Standing', qr_code: generateStudentQRCodeUrl('STU004') },
+      { id: 'STU005', name: 'Liam Davis', email: 'liam.d@stjosephs.edu', department: 'Information Technology', grade_level: 'Sophomore', attendance: 71.5, scores: { 'Discrete Mathematics': 64, 'Web Technologies': 42, 'Computer Networks': 72, 'Cloud Computing': 68, 'Database Management Systems': 62 }, gpa: 6.16, status: 'At-Risk', qr_code: generateStudentQRCodeUrl('STU005') },
+      { id: 'STU006', name: 'Olivia Taylor', email: 'olivia.t@stjosephs.edu', department: 'Civil Engineering', grade_level: 'Senior', attendance: 94.0, scores: { 'Mechanics of Solids': 92, 'Structural Analysis': 88, 'Environmental Engineering': 96, 'Surveying': 90, 'Geotechnical Engineering': 87 }, gpa: 9.06, status: 'Honor Roll', qr_code: generateStudentQRCodeUrl('STU006') },
+      { id: 'STU007', name: 'Noah Anderson', email: 'noah.a@stjosephs.edu', department: 'Mechanical Engineering', grade_level: 'Junior', attendance: 85.5, scores: { 'Thermodynamics': 81, 'Engineering Mechanics': 85, 'Machine Dynamics': 78, 'Manufacturing Technology': 82, 'Fluid Mechanics': 79 }, gpa: 8.10, status: 'Good Standing', qr_code: generateStudentQRCodeUrl('STU007') },
+      { id: 'STU008', name: 'Ava Thomas', email: 'ava.t@stjosephs.edu', department: 'Biotechnology', grade_level: 'Freshman', attendance: 91.0, scores: { 'Cell Biology': 85, 'Biochemistry': 79, 'Molecular Biology': 88, 'Microbiology': 94, 'Genetic Engineering': 90 }, gpa: 8.72, status: 'Good Standing', qr_code: generateStudentQRCodeUrl('STU008') },
+      { id: 'STU009', name: 'Lucas White', email: 'lucas.w@stjosephs.edu', department: 'Computer Science & Engineering', grade_level: 'Junior', attendance: 62.0, scores: { 'Data Structures & Algorithms': 42, 'Operating Systems': 45, 'Database Management Systems': 68, 'Software Engineering': 60, 'Artificial Intelligence': 58 }, gpa: 5.42, status: 'At-Risk', qr_code: generateStudentQRCodeUrl('STU009') },
+      { id: 'STU010', name: 'Isabella Harris', email: 'isabella.h@stjosephs.edu', department: 'Master of Business Administration', grade_level: 'Sophomore', attendance: 98.5, scores: { 'Principles of Management': 96, 'Financial Accounting': 92, 'Marketing Management': 99, 'Strategic Management': 95, 'Business Analytics': 93 }, gpa: 9.50, status: 'Honor Roll', qr_code: generateStudentQRCodeUrl('STU010') }
     ];
     saveFallbackData();
   }
@@ -280,13 +449,13 @@ function computeLocalAnalytics() {
     subjectAverages[subj] = +(subjectTotals[subj] / subjectCounts[subj]).toFixed(1);
   });
 
-  const gpaDist = { "3.5 - 4.0 (A)": 0, "3.0 - 3.49 (B)": 0, "2.5 - 2.99 (C)": 0, "< 2.5 (D/F)": 0 };
+  const gpaDist = { "8.5 - 10.0 (Honor Roll)": 0, "7.0 - 8.49 (Strong)": 0, "5.0 - 6.99 (Developing)": 0, "< 5.0 (At-Risk)": 0 };
   state.students.forEach(s => {
     const gpa = s.gpa || 0;
-    if (gpa >= 3.5) gpaDist["3.5 - 4.0 (A)"]++;
-    else if (gpa >= 3.0) gpaDist["3.0 - 3.49 (B)"]++;
-    else if (gpa >= 2.5) gpaDist["2.5 - 2.99 (C)"]++;
-    else gpaDist["< 2.5 (D/F)"]++;
+    if (gpa >= 8.5) gpaDist["8.5 - 10.0 (Honor Roll)"]++;
+    else if (gpa >= 7.0) gpaDist["7.0 - 8.49 (Strong)"]++;
+    else if (gpa >= 5.0) gpaDist["5.0 - 6.99 (Developing)"]++;
+    else gpaDist["< 5.0 (At-Risk)"]++;
   });
 
   const deptData = {};
@@ -368,8 +537,8 @@ function enrichStudentLocalDetails(student) {
   res.arrear_count = arrear_count;
 
   const achievements = [];
-  if (student.gpa >= 3.75) achievements.push({ title: "Dean's List Honor Roll", description: "Earned a cumulative GPA of 3.75 or higher at St. Joseph's University", icon: "fa-award", certKey: "deans-list" });
-  if (student.gpa >= 3.5)  achievements.push({ title: "Academic Excellence Certificate", description: "Maintained a cumulative GPA of 3.50 or higher across enrolled subjects", icon: "fa-medal", certKey: "academic-excellence" });
+  if (student.gpa >= 8.5) achievements.push({ title: "Dean's List Honor Roll", description: "Earned a cumulative CGPA of 8.50 or higher at St. Joseph's College of Engineering", icon: "fa-award", certKey: "deans-list" });
+  if (student.gpa >= 8.0) achievements.push({ title: "Academic Excellence Certificate", description: "Maintained a cumulative CGPA of 8.00 or higher across enrolled subjects", icon: "fa-medal", certKey: "academic-excellence" });
   if (student.attendance >= 100.0) achievements.push({ title: "100% Attendance Award", description: "Maintained a perfect 100% classroom attendance record", icon: "fa-calendar-check", certKey: "perfect-attendance" });
   if (arrear_count === 0) achievements.push({ title: "Clear Academic Standing", description: "Zero Standing Arrears / Backlogs — fully cleared academic record", icon: "fa-circle-check", certKey: "clear-standing" });
 
@@ -390,9 +559,17 @@ function renderStudentPortal(student) {
 
   document.getElementById('student-large-avatar').textContent = initials;
   document.getElementById('student-card-name').textContent = student.name;
+  document.getElementById('student-card-id').textContent = `Student ID: ${student.id}`;
   document.getElementById('student-card-dept').innerHTML = `<i class="fa-solid fa-building-columns"></i> ${escapeHtml(student.department)}`;
   document.getElementById('student-card-level').innerHTML = `<i class="fa-solid fa-layer-group"></i> ${escapeHtml(student.grade_level)}`;
   document.getElementById('student-card-email').innerHTML = `<i class="fa-solid fa-envelope"></i> ${escapeHtml(student.email)}`;
+  document.getElementById('student-info-id').textContent = student.id;
+  document.getElementById('student-info-department').textContent = student.department;
+  document.getElementById('student-info-level').textContent = student.grade_level;
+  document.getElementById('student-info-email').textContent = student.email;
+  document.getElementById('student-info-attendance').textContent = `${student.attendance}%`;
+  document.getElementById('student-info-status').textContent = student.status;
+  state._portalStudent = student;
 
   const statusBadge = document.getElementById('student-card-status-badge');
   let statusClass = 'status-good';
@@ -401,9 +578,22 @@ function renderStudentPortal(student) {
   statusBadge.className = `status-pill ${statusClass}`;
   statusBadge.innerHTML = `<span class="status-dot"></span> ${student.status}`;
 
-  document.getElementById('student-kpi-gpa').textContent = student.gpa.toFixed(2);
+  document.getElementById('student-kpi-gpa').textContent = formatCgpa(student.gpa);
   document.getElementById('student-kpi-attendance').textContent = `${student.attendance}%`;
   document.getElementById('student-kpi-arrears').textContent = student.arrear_count || 0;
+
+  const qrImg = document.getElementById('student-qr-image');
+  if (qrImg) {
+    const qrSrc = student.qr_code || generateStudentQRCodeUrl(student.id);
+    qrImg.src = qrSrc;
+    qrImg.alt = `${student.name} QR code`;
+  }
+  const qrLink = document.getElementById('student-qr-link');
+  if (qrLink) {
+    const profileUrl = new URL(student.profile_url || '/student-verify.html', window.location.origin);
+    profileUrl.searchParams.set('id', student.id);
+    qrLink.href = profileUrl.toString();
+  }
 
   const arrearSubtext = document.getElementById('student-arrear-subtext');
   if (student.arrear_count > 0) {
@@ -437,8 +627,6 @@ function renderStudentPortal(student) {
     if (!list.length) {
       achContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); padding: 1rem;">No current honors listed. Keep up the academic effort!</p>`;
     } else {
-      // Store student on state for use by certificate functions
-      state._portalStudent = student;
       achContainer.innerHTML = list.map(item => `
         <div class="achievement-item">
           <div class="achievement-icon">
@@ -460,6 +648,431 @@ function renderStudentPortal(student) {
       `).join('');
     }
   }
+
+  const markList = student.subject_marksheet || [];
+  if (document.getElementById('subject-performance-summary')) {
+    document.getElementById('subject-performance-summary').innerHTML = `
+      <div class="small-stat-box">
+        <span class="small-stat-label">CGPA</span>
+        <strong>${formatCgpa(student.gpa)}</strong>
+      </div>
+      <div class="small-stat-box">
+        <span class="small-stat-label">Subjects</span>
+        <strong>${markList.length}</strong>
+      </div>
+      <div class="small-stat-box">
+        <span class="small-stat-label">Attendance</span>
+        <strong>${student.attendance}%</strong>
+      </div>
+    `;
+  }
+
+  renderStudyCoach(student, markList);
+  initializeStudentTools(student);
+}
+
+function buildStudyPlan(student, markList) {
+  const focusSubjects = [...markList].sort((first, second) => first.score - second.score).slice(0, 3);
+  const activities = [
+    'Review lecture notes and write a short concept summary.',
+    'Work through three practice questions without looking at solutions.',
+    'Revisit mistakes and explain the key idea in your own words.',
+    'Complete one timed exercise, then check each step.',
+    'Connect this topic to another subject or real-world example.',
+    'Take a short self-test and list anything still unclear.',
+    'Review the week and prepare questions for your next class.'
+  ];
+  const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+
+  return {
+    focusSubjects,
+    days: days.map((day, index) => ({
+      day,
+      subject: focusSubjects[index % Math.max(focusSubjects.length, 1)]?.subject || 'All enrolled subjects',
+      activity: activities[index],
+      minutes: index === 6 ? 30 : 45
+    }))
+  };
+}
+
+function renderStudyCoach(student, markList) {
+  const { focusSubjects, days } = buildStudyPlan(student, markList);
+  const priorities = [];
+  const attendance = Number(student.attendance || 0);
+  const gpa = Number(student.gpa || 0);
+
+  focusSubjects.forEach((subject, index) => {
+    const label = subject.score < 50 ? 'Urgent support' : subject.score < 65 ? 'Build fundamentals' : 'Maintain progress';
+    priorities.push({
+      title: `${index + 1}. ${subject.subject}`,
+      detail: `${label}: ${subject.score}% recorded. Schedule a focused 45-minute review.`
+    });
+  });
+
+  if (attendance < 75) {
+    priorities.push({ title: 'Attendance needs attention', detail: `${attendance}% recorded. Attend upcoming classes and contact your advisor about missed sessions.` });
+  } else if (attendance < 85) {
+    priorities.push({ title: 'Build an attendance routine', detail: `${attendance}% recorded. Aim to attend every class this week and track any missed sessions.` });
+  }
+  if (gpa > 0 && gpa < 5) {
+    priorities.push({ title: 'Meet your academic advisor', detail: 'Review course support options and agree on a practical recovery plan.' });
+  }
+  if (!priorities.length) {
+    priorities.push({ title: 'Keep your momentum', detail: 'Your current indicators are on track. Use this plan to reinforce your strongest habits.' });
+  }
+  if (!focusSubjects.length) {
+    priorities.unshift({ title: 'Add current subject marks', detail: 'Your weekly plan is ready. Updated marks will make its subject priorities more specific.' });
+  }
+
+  const summary = focusSubjects.length
+    ? `Your plan starts with ${focusSubjects[0].subject}, your lowest recorded subject score. Short, focused sessions are easier to review and adjust.`
+    : 'Your plan uses a balanced review routine. Add subject marks to personalize its priorities.';
+  document.getElementById('study-coach-summary').textContent = summary;
+  document.getElementById('study-coach-priorities').innerHTML = priorities.map(item => `
+    <div class="coach-priority">
+      <strong>${escapeHtml(item.title)}</strong>
+      <span>${escapeHtml(item.detail)}</span>
+    </div>
+  `).join('');
+  document.getElementById('study-plan-preview').innerHTML = days.map(item => `
+    <li class="study-plan-day">
+      <span class="study-plan-day-label">${item.day} · ${item.minutes} min</span>
+      <strong>${escapeHtml(item.subject)}</strong>
+      <span>${escapeHtml(item.activity)}</span>
+    </li>
+  `).join('');
+}
+
+function downloadStudyPlan() {
+  const student = state._portalStudent;
+  if (!student) return;
+
+  const markList = student.subject_marksheet || [];
+  const { focusSubjects, days } = buildStudyPlan(student, markList);
+  const lines = [
+    `7-Day Study Plan - ${student.name}`,
+    `Student ID: ${student.id}`,
+    `CGPA: ${formatCgpa(student.gpa)} | Attendance: ${student.attendance}%`,
+    '',
+    'Priority subjects:',
+    ...(focusSubjects.length ? focusSubjects.map(item => `- ${item.subject}: ${item.score}%`) : ['- Add subject marks to personalize priorities.']),
+    '',
+    'Weekly schedule:',
+    ...days.map(item => `${item.day} (${item.minutes} min) - ${item.subject}: ${item.activity}`)
+  ];
+  const file = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const downloadUrl = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = `${student.id}-7-day-study-plan.txt`;
+  link.click();
+  URL.revokeObjectURL(downloadUrl);
+  showToast('Your 7-day study plan was downloaded.', 'success');
+}
+
+function studentToolsStorageKey(studentId) {
+  return `sju_student_tools_${studentId}`;
+}
+
+function persistStudentTools() {
+  if (!state._portalStudent || !state._studentTools) return;
+  try {
+    localStorage.setItem(studentToolsStorageKey(state._portalStudent.id), JSON.stringify(state._studentTools));
+  } catch (error) {
+    showToast('Your changes could not be saved in this browser.', 'danger');
+  }
+}
+
+function currentSemesterLabel(student) {
+  const details = [student.academic_year, student.semester ? `Semester ${student.semester}` : '']
+    .filter(Boolean);
+  return details.length ? details.join(' · ') : 'Current term';
+}
+
+function initializeStudentTools(student) {
+  try {
+    state._studentTools = JSON.parse(localStorage.getItem(studentToolsStorageKey(student.id)) || 'null');
+  } catch (error) {
+    state._studentTools = null;
+  }
+
+  if (!state._studentTools || typeof state._studentTools !== 'object') {
+    state._studentTools = { timetable: [], assignments: [], semesters: [] };
+  }
+  if (!Array.isArray(state._studentTools.timetable)) state._studentTools.timetable = [];
+  if (!Array.isArray(state._studentTools.assignments)) state._studentTools.assignments = [];
+  if (!Array.isArray(state._studentTools.semesters)) state._studentTools.semesters = [];
+
+  if (!state._studentTools.semesters.length) {
+    state._studentTools.semesters.push({
+      id: `current-${student.id}`,
+      term: currentSemesterLabel(student),
+      cgpa: Number(student.gpa || 0),
+      attendance: Number(student.attendance || 0),
+      current: true
+    });
+  }
+
+  persistStudentTools();
+  renderClassSchedule();
+  renderAssignments();
+  renderSemesterProgress();
+  updateReminderButton();
+  checkAssignmentReminders();
+  if (assignmentReminderInterval) clearInterval(assignmentReminderInterval);
+  assignmentReminderInterval = setInterval(checkAssignmentReminders, 60000);
+
+  const progressCgpa = document.getElementById('progress-cgpa');
+  const progressAttendance = document.getElementById('progress-attendance');
+  if (progressCgpa) progressCgpa.value = Number(student.gpa || 0).toFixed(2);
+  if (progressAttendance) progressAttendance.value = Number(student.attendance || 0).toFixed(1);
+}
+
+function createStudentToolId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function renderClassSchedule() {
+  const tbody = document.getElementById('student-timetable-list');
+  if (!tbody) return;
+  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const classes = [...(state._studentTools?.timetable || [])].sort((first, second) =>
+    dayOrder.indexOf(first.day) - dayOrder.indexOf(second.day) || first.start.localeCompare(second.start)
+  );
+  if (!classes.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="student-tool-empty">No classes added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = classes.map(item => `
+    <tr>
+      <td>${escapeHtml(item.day)}</td>
+      <td>${escapeHtml(item.start)} - ${escapeHtml(item.end)}</td>
+      <td><strong>${escapeHtml(item.course)}</strong></td>
+      <td>${escapeHtml(item.location || '-')}</td>
+      <td class="student-tool-actions"><button class="btn btn-danger btn-sm" type="button" onclick="deleteClassSchedule('${item.id}')" aria-label="Remove ${escapeHtml(item.course)}"><i class="fa-solid fa-trash-can"></i></button></td>
+    </tr>
+  `).join('');
+}
+
+function saveClassSchedule(event) {
+  event.preventDefault();
+  const start = document.getElementById('class-start').value;
+  const end = document.getElementById('class-end').value;
+  if (start >= end) {
+    showToast('Class end time must be later than its start time.', 'warning');
+    return;
+  }
+  state._studentTools.timetable.push({
+    id: createStudentToolId(),
+    course: document.getElementById('class-course').value.trim(),
+    day: document.getElementById('class-day').value,
+    start,
+    end,
+    location: document.getElementById('class-location').value.trim()
+  });
+  persistStudentTools();
+  renderClassSchedule();
+  document.getElementById('class-schedule-form').reset();
+  showToast('Class added to your timetable.', 'success');
+}
+
+function deleteClassSchedule(id) {
+  state._studentTools.timetable = state._studentTools.timetable.filter(item => item.id !== id);
+  persistStudentTools();
+  renderClassSchedule();
+}
+
+function renderAssignments() {
+  const container = document.getElementById('student-assignment-list');
+  if (!container) return;
+  const assignments = [...(state._studentTools?.assignments || [])]
+    .sort((first, second) => new Date(first.dueAt) - new Date(second.dueAt));
+  if (!assignments.length) {
+    container.innerHTML = '<p class="student-tool-empty">No assignments yet. Add a deadline to start your task list.</p>';
+    return;
+  }
+
+  const now = Date.now();
+  container.innerHTML = assignments.map(item => {
+    const dueTime = new Date(item.dueAt).getTime();
+    const overdue = !item.completed && dueTime < now;
+    const dueSoon = !item.completed && !overdue && dueTime - now < 24 * 60 * 60 * 1000;
+    const status = item.completed ? 'Completed' : overdue ? 'Overdue' : dueSoon ? 'Due soon' : 'Upcoming';
+    const statusClass = item.completed ? 'task-complete' : overdue ? 'task-overdue' : dueSoon ? 'task-due-soon' : 'task-upcoming';
+    return `
+      <article class="student-assignment-item ${item.completed ? 'is-complete' : ''}">
+        <button class="task-check-btn" type="button" onclick="toggleAssignmentComplete('${item.id}')" aria-label="${item.completed ? 'Reopen' : 'Mark complete'}: ${escapeHtml(item.title)}">
+          <i class="fa-solid ${item.completed ? 'fa-circle-check' : 'fa-circle'}"></i>
+        </button>
+        <div class="student-assignment-main">
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${escapeHtml(item.course)} · Due ${escapeHtml(new Date(item.dueAt).toLocaleString())}</span>
+        </div>
+        <span class="assignment-status ${statusClass}">${status}</span>
+        <button class="btn btn-danger btn-sm" type="button" onclick="deleteAssignment('${item.id}')" aria-label="Delete ${escapeHtml(item.title)}"><i class="fa-solid fa-trash-can"></i></button>
+      </article>
+    `;
+  }).join('');
+}
+
+function saveAssignment(event) {
+  event.preventDefault();
+  const dueAt = new Date(document.getElementById('assignment-due').value);
+  if (Number.isNaN(dueAt.getTime())) {
+    showToast('Choose a valid assignment deadline.', 'warning');
+    return;
+  }
+  const reminderEnabled = document.getElementById('assignment-remind').checked;
+  state._studentTools.assignments.push({
+    id: createStudentToolId(),
+    title: document.getElementById('assignment-title').value.trim(),
+    course: document.getElementById('assignment-course').value.trim(),
+    dueAt: dueAt.toISOString(),
+    reminderAt: reminderEnabled ? new Date(dueAt.getTime() - 60 * 60 * 1000).toISOString() : null,
+    completed: false,
+    notified: false
+  });
+  persistStudentTools();
+  renderAssignments();
+  document.getElementById('assignment-form').reset();
+  showToast('Assignment deadline saved.', 'success');
+  checkAssignmentReminders();
+}
+
+function toggleAssignmentComplete(id) {
+  const assignment = state._studentTools.assignments.find(item => item.id === id);
+  if (!assignment) return;
+  assignment.completed = !assignment.completed;
+  persistStudentTools();
+  renderAssignments();
+}
+
+function deleteAssignment(id) {
+  state._studentTools.assignments = state._studentTools.assignments.filter(item => item.id !== id);
+  persistStudentTools();
+  renderAssignments();
+}
+
+async function enableAssignmentReminders() {
+  if (!('Notification' in window)) {
+    showToast('This browser does not support desktop notifications.', 'warning');
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  updateReminderButton();
+  if (permission === 'granted') {
+    showToast('Deadline reminders are enabled while this portal is open.', 'success');
+    checkAssignmentReminders();
+  } else {
+    showToast('Notification permission was not granted. Deadlines still appear in your task list.', 'warning');
+  }
+}
+
+function updateReminderButton() {
+  const button = document.getElementById('enable-reminders-btn');
+  if (!button || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    button.innerHTML = '<i class="fa-solid fa-bell"></i> Reminders enabled';
+    button.disabled = true;
+  } else if (Notification.permission === 'denied') {
+    button.innerHTML = '<i class="fa-solid fa-bell-slash"></i> Notifications blocked';
+    button.disabled = true;
+  }
+}
+
+function checkAssignmentReminders() {
+  if (!state._studentTools || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = Date.now();
+  let changed = false;
+  state._studentTools.assignments.forEach(item => {
+    if (item.completed || item.notified || !item.reminderAt || new Date(item.reminderAt).getTime() > now) return;
+    if (new Date(item.dueAt).getTime() <= now) return;
+    const notification = new Notification(`Assignment due soon: ${item.title}`, {
+      body: `${item.course} is due ${new Date(item.dueAt).toLocaleString()}.`,
+      tag: `assignment-${item.id}`
+    });
+    notification.onclick = () => window.focus();
+    item.notified = true;
+    changed = true;
+  });
+  if (changed) persistStudentTools();
+}
+
+function compareSemesterLabels(first, second) {
+  const firstCurrent = first.term.toLowerCase() === 'current term';
+  const secondCurrent = second.term.toLowerCase() === 'current term';
+  if (firstCurrent !== secondCurrent) return firstCurrent ? 1 : -1;
+  return first.term.localeCompare(second.term, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function renderSemesterProgress() {
+  const records = [...(state._studentTools?.semesters || [])].sort(compareSemesterLabels);
+  const tbody = document.getElementById('semester-progress-list');
+  if (tbody) {
+    tbody.innerHTML = records.map(item => `
+      <tr>
+        <td>${escapeHtml(item.term)}${item.current ? ' <span class="current-term-label">Current</span>' : ''}</td>
+        <td>${Number(item.cgpa).toFixed(2)} / 10</td>
+        <td>${Number(item.attendance).toFixed(1)}%</td>
+        <td class="student-tool-actions">${item.current ? '' : `<button class="btn btn-danger btn-sm" type="button" onclick="deleteSemesterProgress('${item.id}')" aria-label="Remove ${escapeHtml(item.term)}"><i class="fa-solid fa-trash-can"></i></button>`}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="student-tool-empty">No term results recorded yet.</td></tr>';
+  }
+  if (typeof Chart === 'undefined') return;
+
+  const canvas = document.getElementById('chartSemesterProgress');
+  if (!canvas) return;
+  if (chartSemesterProgress) chartSemesterProgress.destroy();
+  const isDark = state.theme === 'dark';
+  chartSemesterProgress = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: records.map(item => item.term),
+      datasets: [
+        { label: 'CGPA', data: records.map(item => Number(item.cgpa)), yAxisID: 'cgpa', borderColor: '#087f73', backgroundColor: 'rgba(8, 127, 115, 0.12)', pointBackgroundColor: '#087f73', fill: true, tension: 0.25 },
+        { label: 'Attendance (%)', data: records.map(item => Number(item.attendance)), yAxisID: 'attendance', borderColor: '#d17b21', backgroundColor: '#d17b21', pointBackgroundColor: '#d17b21', tension: 0.25 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { color: isDark ? '#cbd5e1' : '#475569' } } },
+      scales: {
+        x: { ticks: { color: isDark ? '#cbd5e1' : '#475569' }, grid: { display: false } },
+        cgpa: { type: 'linear', position: 'left', min: 0, max: 10, title: { display: true, text: 'CGPA', color: isDark ? '#cbd5e1' : '#475569' }, ticks: { color: isDark ? '#cbd5e1' : '#475569' } },
+        attendance: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'Attendance (%)', color: isDark ? '#cbd5e1' : '#475569' }, ticks: { color: isDark ? '#cbd5e1' : '#475569' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+function saveSemesterProgress(event) {
+  event.preventDefault();
+  const term = document.getElementById('progress-term').value.trim();
+  const cgpa = Number(document.getElementById('progress-cgpa').value);
+  const attendance = Number(document.getElementById('progress-attendance').value);
+  if (!term || cgpa < 0 || cgpa > 10 || attendance < 0 || attendance > 100) {
+    showToast('Enter a term, CGPA from 0 to 10, and attendance from 0 to 100.', 'warning');
+    return;
+  }
+  const existing = state._studentTools.semesters.find(item => item.term.toLowerCase() === term.toLowerCase());
+  if (existing) {
+    existing.cgpa = cgpa;
+    existing.attendance = attendance;
+  } else {
+    state._studentTools.semesters.push({ id: createStudentToolId(), term, cgpa, attendance, current: false });
+  }
+  persistStudentTools();
+  renderSemesterProgress();
+  document.getElementById('semester-progress-form').reset();
+  showToast('Semester results saved to your progress tracker.', 'success');
+}
+
+function deleteSemesterProgress(id) {
+  state._studentTools.semesters = state._studentTools.semesters.filter(item => item.id !== id || item.current);
+  persistStudentTools();
+  renderSemesterProgress();
 }
 
 /**
@@ -469,7 +1082,7 @@ function renderKPIs() {
   if (!state.analytics || !state.analytics.kpis) return;
   const kpis = state.analytics.kpis;
   document.getElementById('kpi-total-students').textContent = kpis.total_students || 0;
-  document.getElementById('kpi-avg-gpa').textContent = (kpis.avg_gpa || 0).toFixed(2);
+  document.getElementById('kpi-avg-gpa').textContent = formatCgpa(kpis.avg_gpa || 0);
   document.getElementById('kpi-avg-att').textContent = `${(kpis.avg_attendance || 0)}%`;
   document.getElementById('kpi-risk-count').textContent = kpis.at_risk_count || 0;
 }
@@ -552,7 +1165,7 @@ function renderCharts() {
       },
       scales: {
         x: { title: { display: true, text: 'Attendance Rate (%)', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
-        y: { title: { display: true, text: 'CGPA (4.0 Scale)', color: textColor }, min: 0, max: 4.0, ticks: { color: textColor }, grid: { color: gridColor } }
+        y: { title: { display: true, text: 'CGPA (10.00 Scale)', color: textColor }, min: 0, max: 10, ticks: { color: textColor }, grid: { color: gridColor } }
       }
     }
   });
@@ -577,7 +1190,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { min: 0, max: 4.0, ticks: { color: textColor }, grid: { color: gridColor } },
+        y: { min: 0, max: 10, ticks: { color: textColor }, grid: { color: gridColor } },
         x: { ticks: { color: textColor }, grid: { display: false } }
       }
     }
@@ -610,7 +1223,7 @@ function renderStudentTable() {
   }
 
   if (state.filteredStudents.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">No student records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-muted);">No student records found.</td></tr>`;
     return;
   }
 
@@ -649,7 +1262,7 @@ function renderStudentTable() {
             <span><strong>${student.attendance}%</strong></span>
           </div>
         </td>
-        <td><span class="gpa-badge">${student.gpa.toFixed(2)}</span></td>
+        <td><span class="gpa-badge">${formatCgpa(student.gpa)}</span></td>
         <td>
           <span class="status-pill ${statusPillClass}">
             <span class="status-dot"></span> ${statusText}
@@ -700,11 +1313,45 @@ function resetFilters() {
   showToast('Search filters cleared', 'info');
 }
 
+function renderDepartmentSubjectFields(defaultScores = {}) {
+  const container = document.getElementById('department-subjects-container');
+  if (!container) return;
+
+  const department = document.getElementById('form-department').value || 'Computer Science & Engineering';
+  const subjects = getDepartmentSubjects(department);
+
+  container.innerHTML = subjects.map((subject, index) => {
+    const value = defaultScores[subject] ?? defaultScores[index] ?? '';
+    const inputId = `subject-input-${subject.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+    return `
+      <div class="form-group">
+        <label for="${inputId}">${escapeHtml(subject)}</label>
+        <input type="number" id="${inputId}" class="form-control department-subject-input" min="0" max="100" step="0.1" value="${value === '' ? '' : Number(value).toFixed(1)}">
+      </div>
+    `;
+  }).join('');
+}
+
+function collectDepartmentScoresFromForm() {
+  const container = document.getElementById('department-subjects-container');
+  if (!container) return {};
+
+  const entries = [...container.querySelectorAll('.department-subject-input')];
+  const scores = {};
+  entries.forEach((input) => {
+    const label = input.closest('.form-group')?.querySelector('label')?.textContent || '';
+    if (!label || input.value.trim() === '') return;
+    const value = Number(input.value);
+    scores[label] = Number.isFinite(value) ? value : 0;
+  });
+  return scores;
+}
+
 function renderAtRiskIntervention() {
   const container = document.getElementById('at-risk-container');
   if (!container) return;
 
-  const atRisk = state.students.filter(s => s.status === 'At-Risk' || s.gpa < 2.5 || s.attendance < 75);
+  const atRisk = state.students.filter(s => s.status === 'At-Risk' || s.gpa < 5.0 || s.attendance < 75);
 
   if (atRisk.length === 0) {
     container.innerHTML = `
@@ -732,7 +1379,7 @@ function renderAtRiskIntervention() {
       <tbody>
         ${atRisk.map(s => {
           const reasons = [];
-          if (s.gpa < 2.5) reasons.push(`CGPA Warning (${s.gpa.toFixed(2)})`);
+          if (s.gpa < 5.0) reasons.push(`CGPA Warning (${formatCgpa(s.gpa)})`);
           if (s.attendance < 75) reasons.push(`Low Attendance (${s.attendance}%)`);
           return `
             <tr>
@@ -743,7 +1390,7 @@ function renderAtRiskIntervention() {
                   <span class="student-email-text">${escapeHtml(s.department)} &bull; ${escapeHtml(s.grade_level)}</span>
                 </div>
               </td>
-              <td><span style="color: var(--danger); font-weight: 700;">${s.gpa.toFixed(2)}</span></td>
+              <td><span style="color: var(--danger); font-weight: 700;">${formatCgpa(s.gpa)}</span></td>
               <td><span style="color: var(--danger); font-weight: 700;">${s.attendance}%</span></td>
               <td>
                 <span class="status-pill status-risk">
@@ -767,6 +1414,12 @@ function openAddStudentModal() {
   state.editingStudentId = null;
   document.getElementById('modal-title').textContent = 'Add New Student Record';
   document.getElementById('student-form').reset();
+  document.getElementById('form-department').value = 'Computer Science & Engineering';
+  document.getElementById('form-academic-year').value = '';
+  document.getElementById('form-year').value = '';
+  document.getElementById('form-semester').value = '';
+  document.getElementById('form-section').value = '';
+  renderDepartmentSubjectFields();
   document.getElementById('student-modal').classList.add('active');
 }
 
@@ -779,17 +1432,16 @@ function openEditStudentModal(id) {
 
   document.getElementById('form-name').value = student.name;
   document.getElementById('form-email').value = student.email;
-  document.getElementById('form-department').value = student.department;
+  document.getElementById('form-department').value = student.department || 'Computer Science & Engineering';
   document.getElementById('form-grade-level').value = student.grade_level;
+  document.getElementById('form-academic-year').value = student.academic_year || '';
+  document.getElementById('form-year').value = student.year || '';
+  document.getElementById('form-semester').value = student.semester || '';
+  document.getElementById('form-section').value = student.section || '';
   document.getElementById('form-attendance').value = student.attendance;
 
   const scores = student.scores || {};
-  document.getElementById('score-math').value = scores.Mathematics || 75;
-  document.getElementById('score-physics').value = scores.Physics || 75;
-  document.getElementById('score-cs').value = scores['Computer Science'] || 75;
-  document.getElementById('score-english').value = scores.English || 75;
-  document.getElementById('score-history').value = scores.History || 75;
-
+  renderDepartmentSubjectFields(scores);
   document.getElementById('student-modal').classList.add('active');
 }
 
@@ -804,17 +1456,14 @@ async function handleSaveStudent(event) {
   const email = document.getElementById('form-email').value.trim();
   const department = document.getElementById('form-department').value;
   const grade_level = document.getElementById('form-grade-level').value;
+  const academic_year = document.getElementById('form-academic-year').value.trim();
+  const year = document.getElementById('form-year').value;
+  const semester = document.getElementById('form-semester').value;
+  const section = document.getElementById('form-section').value.trim();
   const attendance = parseFloat(document.getElementById('form-attendance').value);
+  const scores = collectDepartmentScoresFromForm();
 
-  const scores = {
-    "Mathematics": parseFloat(document.getElementById('score-math').value),
-    "Physics": parseFloat(document.getElementById('score-physics').value),
-    "Computer Science": parseFloat(document.getElementById('score-cs').value),
-    "English": parseFloat(document.getElementById('score-english').value),
-    "History": parseFloat(document.getElementById('score-history').value)
-  };
-
-  const payload = { name, email, department, grade_level, attendance, scores };
+  const payload = { name, email, department, grade_level, academic_year, year, semester, section, attendance, scores };
 
   try {
     const isEdit = !!state.editingStudentId;
@@ -847,13 +1496,13 @@ async function handleSaveStudent(event) {
   if (state.editingStudentId) {
     const idx = state.students.findIndex(s => s.id === state.editingStudentId);
     if (idx !== -1) {
-      state.students[idx] = { ...state.students[idx], ...payload, gpa, status };
+      state.students[idx] = { ...state.students[idx], ...payload, gpa, status, qr_code: generateStudentQRCodeUrl(state.students[idx].id) };
     }
     showToast('Student record updated locally!', 'info');
   } else {
     const nextNum = state.students.length + 1;
     const id = `STU${String(nextNum).padStart(3, '0')}`;
-    state.students.push({ id, ...payload, gpa, status });
+    state.students.push({ id, ...payload, gpa, status, qr_code: generateStudentQRCodeUrl(id), profile_url: `/student-verify.html?id=${id}` });
     showToast('New student record added locally!', 'success');
   }
 
@@ -896,21 +1545,15 @@ async function handleDeleteStudent(id) {
 }
 
 function calculateLocalGPA(scores) {
-  const vals = Object.values(scores);
+  const vals = Object.values(scores || {});
   if (!vals.length) return 0.0;
-  const pts = vals.map(s => {
-    if (s >= 90) return 4.0;
-    if (s >= 80) return 3.0 + (s - 80) * 0.09;
-    if (s >= 70) return 2.0 + (s - 70) * 0.09;
-    if (s >= 60) return 1.0 + (s - 60) * 0.09;
-    return (s / 60) * 1.0;
-  });
-  return parseFloat((pts.reduce((a, b) => a + b, 0) / pts.length).toFixed(2));
+  const avg = vals.reduce((sum, value) => sum + Number(value || 0), 0) / vals.length;
+  return parseFloat((avg / 10.0).toFixed(2));
 }
 
 function determineLocalStatus(gpa, attendance) {
-  if (gpa < 2.5 || attendance < 75) return 'At-Risk';
-  if (gpa >= 3.75 && attendance >= 90) return 'Honor Roll';
+  if (gpa < 5.0 || attendance < 75) return 'At-Risk';
+  if (gpa >= 8.5 && attendance >= 90) return 'Honor Roll';
   return 'Good Standing';
 }
 
@@ -983,12 +1626,9 @@ const CERT_CONFIG = {
     theme:      'cert-theme-gold',
     medalIcon:  'fa-award',
     description: `has been honored with the <strong>Dean's List Honor Roll</strong> distinction
-      for achieving a cumulative GPA of at least 3.75 at St. Joseph's University.
+      for achieving a cumulative CGPA of at least 8.50 at St. Joseph's College of Engineering.
       This recognition is awarded to students who demonstrate outstanding intellectual achievement,
-      exceptional commitment to academic excellence, and exemplary conduct throughout the academic year.
-      <br><br>
-      Organized by the Office of the Registrar &amp; Academic Affairs, St. Joseph's University
-      in recognition of outstanding academic merit.`
+      exceptional commitment to academic excellence, and exemplary conduct throughout the academic year.`
   },
   'academic-excellence': {
     label:      'Academic Excellence Certificate',
@@ -996,13 +1636,9 @@ const CERT_CONFIG = {
     icon:       'fa-medal',
     theme:      'cert-theme-blue',
     medalIcon:  'fa-medal',
-    description: `has successfully maintained a <strong>Cumulative GPA of 3.50 or higher</strong>
+    description: `has successfully maintained a <strong>Cumulative CGPA of 8.00 or higher</strong>
       across all enrolled subjects and has demonstrated consistent academic performance
-      throughout the enrollment period at St. Joseph's University.
-      <br><br>
-      This certificate is conferred by the Department of Academic Affairs as an official
-      acknowledgement of scholarly dedication, persistence, and high academic attainment
-      during the current academic year.`
+      throughout the enrollment period at St. Joseph's College of Engineering.`
   },
   'perfect-attendance': {
     label:      '100% Attendance Award',
@@ -1012,10 +1648,7 @@ const CERT_CONFIG = {
     medalIcon:  'fa-calendar-check',
     description: `has achieved a <strong>perfect 100% attendance rate</strong>, demonstrating
       exemplary dedication, punctuality, and commitment to every scheduled academic session
-      at St. Joseph's University throughout the academic year.
-      <br><br>
-      This award is presented by the Department of Student Affairs in recognition
-      of outstanding class presence and academic responsibility.`
+      at St. Joseph's College of Engineering throughout the academic year.`
   },
   'clear-standing': {
     label:      'Clear Academic Standing',
@@ -1024,11 +1657,8 @@ const CERT_CONFIG = {
     theme:      'cert-theme-purple',
     medalIcon:  'fa-circle-check',
     description: `has maintained a <strong>Clear Academic Standing</strong> with zero arrears or backlogs
-      across all enrolled subjects, fulfilling all academic requirements set by the University
-      curriculum and examination board.
-      <br><br>
-      This certificate is issued by the Office of the Registrar, St. Joseph's University,
-      confirming full academic clearance and compliance for the current academic year.`
+      across all enrolled subjects, fulfilling the academic requirements of St. Joseph's
+      College of Engineering.`
   }
 };
 
@@ -1071,17 +1701,21 @@ function openCertificate(certKey) {
   // Description (allow HTML in the cert body)
   document.getElementById('cert-description').innerHTML = config.description;
 
-  // Medal icon
-  document.getElementById('cert-medal-icon').innerHTML =
-    `<i class="fa-solid ${config.medalIcon}"></i>`;
-
   // Issue info
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  document.getElementById('cert-issue-info').textContent = `Issued: ${dateStr}  |  Ref: SJU/${student.id}/${certKey.toUpperCase()}`;
+  document.getElementById('cert-issue-info').textContent = `Issued ${dateStr}  |  Certificate ID: SJCE/${student.id}/${certKey.toUpperCase()}`;
   const academicYearStart = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
-  const semester = today.getMonth() >= 6 ? 'Fall' : 'Spring';
-  document.getElementById('cert-academic-term').textContent = `Academic Year ${academicYearStart}–${academicYearStart + 1} • ${semester} Semester`;
+  document.getElementById('cert-academic-term').textContent = `Academic Year ${academicYearStart} – ${academicYearStart + 1}`;
+  const verificationBase = student.profile_url || window.location.origin;
+  const verificationUrl = new URL('/certificate-verify.html', verificationBase);
+  verificationUrl.searchParams.set('id', student.id);
+  verificationUrl.searchParams.set('type', certKey);
+  const verificationLink = document.getElementById('cert-verify-link');
+  const verificationQr = document.getElementById('cert-qr-image');
+  verificationLink.href = verificationUrl.toString();
+  verificationQr.src = generateQRCodeUrl(verificationUrl.toString());
+  verificationQr.alt = `Verify ${config.label} certificate`;
 
   // Theme class
   const paper = document.getElementById('certificate-canvas');
